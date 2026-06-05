@@ -1,23 +1,18 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { MELCHIOR_PROMPT } from "@/lib/prompts";
-import { UnitResponse } from "@/lib/types";
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+import { UnitResponse, MagiProvider } from "@/lib/types";
+import { callLLM } from "@/lib/ai-client";
 
 export async function POST(req: NextRequest) {
   try {
-    const { query } = await req.json();
+    const { query, provider = "anthropic", apiKey } = await req.json() as {
+      query: string;
+      provider?: MagiProvider;
+      apiKey?: string;
+    };
     if (!query) return NextResponse.json({ error: "Missing query" }, { status: 400 });
 
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 512,
-      system: MELCHIOR_PROMPT,
-      messages: [{ role: "user", content: query }],
-    });
-
-    const text = message.content[0].type === "text" ? message.content[0].text : "";
+    const text = await callLLM(MELCHIOR_PROMPT, query, provider, apiKey);
     const data: UnitResponse = JSON.parse(text);
     return NextResponse.json(data);
   } catch (err) {

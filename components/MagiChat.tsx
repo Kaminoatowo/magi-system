@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect, FormEvent } from "react";
-import { ChatMessage, MagiFullResponse, UnitResponse, ModeratorResponse } from "@/lib/types";
+import { ChatMessage, MagiFullResponse, UnitResponse, ModeratorResponse, MagiSettings } from "@/lib/types";
 import NodePanel from "./NodePanel";
 import MagiReport from "./MagiReport";
+import SettingsPanel from "./SettingsPanel";
 
 const UNITS = [
   { key: "melchior" as const, name: "MELCHIOR-1", subtitle: "SCIENZIATA", accent: "#3B8BEB", endpoint: "/api/melchior" },
@@ -11,20 +12,55 @@ const UNITS = [
   { key: "casper" as const, name: "CASPER-3", subtitle: "DONNA", accent: "#E89020", endpoint: "/api/casper" },
 ];
 
+const DEFAULT_SETTINGS: MagiSettings = {
+  provider: "anthropic",
+  anthropicKey: "",
+  openaiKey: "",
+};
+
+function loadSettings(): MagiSettings {
+  if (typeof window === "undefined") return DEFAULT_SETTINGS;
+  try {
+    const raw = localStorage.getItem("magi-settings");
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+const PROVIDER_LABEL: Record<string, { label: string; color: string }> = {
+  anthropic: { label: "ANTHROPIC", color: "#E89020" },
+  openai: { label: "OPENAI", color: "#1DB87E" },
+};
+
 export default function MagiChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [liveUnits, setLiveUnits] = useState<{ melchior: UnitResponse | null; balthasar: UnitResponse | null; casper: UnitResponse | null }>({
-    melchior: null,
-    balthasar: null,
-    casper: null,
-  });
+  const [settings, setSettings] = useState<MagiSettings>(DEFAULT_SETTINGS);
+  const [showSettings, setShowSettings] = useState(false);
+  const [liveUnits, setLiveUnits] = useState<{
+    melchior: UnitResponse | null;
+    balthasar: UnitResponse | null;
+    casper: UnitResponse | null;
+  }>({ melchior: null, balthasar: null, casper: null });
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setSettings(loadSettings());
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("magi-settings", JSON.stringify(settings));
+  }, [settings]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  function getApiKey() {
+    return settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey;
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -38,13 +74,15 @@ export default function MagiChat() {
     const userMsg: ChatMessage = { role: "user", content: query, timestamp: new Date() };
     setMessages((prev) => [...prev, userMsg]);
 
+    const payload = { query, provider: settings.provider, apiKey: getApiKey() || undefined };
+
     try {
       const [melchior, balthasar, casper] = await Promise.all(
         UNITS.map((unit) =>
           fetch(unit.endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query }),
+            body: JSON.stringify(payload),
           }).then((r) => r.json() as Promise<UnitResponse>)
         )
       );
@@ -54,7 +92,7 @@ export default function MagiChat() {
       const modRes = await fetch("/api/moderator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, melchior, balthasar, casper }),
+        body: JSON.stringify({ ...payload, melchior, balthasar, casper }),
       });
       const moderator: ModeratorResponse = await modRes.json();
 
@@ -86,6 +124,8 @@ export default function MagiChat() {
         }
       : { melchior: null, balthasar: null, casper: null };
 
+  const providerMeta = PROVIDER_LABEL[settings.provider];
+
   return (
     <div className="flex flex-col h-screen" style={{ background: "#0a0a0a", color: "#E0E0D0" }}>
       {/* Header */}
@@ -94,8 +134,25 @@ export default function MagiChat() {
           <span className="text-sm font-bold tracking-widest text-gray-200">MAGI SYSTEM</span>
           <span className="text-xs text-gray-600 ml-3">NERV CENTRAL DOGMA — SUPERCOMPUTER ARRAY</span>
         </div>
-        <div className="text-xs font-mono text-gray-600">
-          {new Date().toISOString().replace("T", " ").slice(0, 19)} UTC
+        <div className="flex items-center gap-4">
+          {/* Provider badge */}
+          <div
+            className="text-xs font-mono font-bold tracking-widest px-2 py-1 rounded border"
+            style={{ borderColor: `${providerMeta.color}50`, color: providerMeta.color, background: `${providerMeta.color}10` }}
+          >
+            {providerMeta.label}
+          </div>
+          <div className="text-xs font-mono text-gray-600">
+            {new Date().toISOString().replace("T", " ").slice(0, 19)} UTC
+          </div>
+          {/* Settings button */}
+          <button
+            onClick={() => setShowSettings(true)}
+            className="text-gray-600 hover:text-gray-300 text-xs font-mono tracking-widest transition-colors border rounded px-2 py-1"
+            style={{ borderColor: "#2a2a2a" }}
+          >
+            ⚙ CONFIG
+          </button>
         </div>
       </div>
 
@@ -180,15 +237,9 @@ export default function MagiChat() {
             type="submit"
             disabled={loading || !input.trim()}
             className="px-4 py-1.5 rounded font-mono text-xs font-bold tracking-widest transition-all border disabled:opacity-30"
-            style={{
-              borderColor: "#3B8BEB",
-              color: "#3B8BEB",
-              background: "transparent",
-            }}
+            style={{ borderColor: "#3B8BEB", color: "#3B8BEB", background: "transparent" }}
             onMouseEnter={(e) => {
-              if (!loading && input.trim()) {
-                (e.target as HTMLButtonElement).style.background = "#3B8BEB20";
-              }
+              if (!loading && input.trim()) (e.target as HTMLButtonElement).style.background = "#3B8BEB20";
             }}
             onMouseLeave={(e) => {
               (e.target as HTMLButtonElement).style.background = "transparent";
@@ -198,6 +249,15 @@ export default function MagiChat() {
           </button>
         </div>
       </form>
+
+      {/* Settings overlay */}
+      {showSettings && (
+        <SettingsPanel
+          settings={settings}
+          onChange={setSettings}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
     </div>
   );
 }

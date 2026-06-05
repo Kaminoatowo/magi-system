@@ -1,5 +1,6 @@
 export type MagiVerdict = "APPROVE" | "REJECT" | "CAUTION";
 export type MagiStato = "CONSENSUS" | "MAJORITY" | "DEADLOCK";
+export type MagiProvider = "anthropic" | "openai";
 
 export interface UnitResponse {
   sintesi: string;
@@ -24,4 +25,10 @@ export interface ChatMessage {
   role: "user" | "magi";
   content: string | MagiFullResponse;
   timestamp: Date;
+}
+
+export interface MagiSettings {
+  provider: MagiProvider;
+  anthropicKey: string;
+  openaiKey: string;
 }
