@@ -26,7 +26,7 @@ CASPER (donna): ${JSON.stringify(casper)}`;
   } catch (err) {
     console.error("Moderator error:", err);
     return NextResponse.json(
-      { stato: "DEADLOCK", verdetto_finale: "Errore nel layer di integrazione.", nota: "" } as ModeratorResponse,
+      { stato: "DEADLOCK", verdetto_finale: err instanceof Error ? err.message : "Errore nel layer di integrazione.", nota: "" } as ModeratorResponse,
       { status: 500 }
     );
   }

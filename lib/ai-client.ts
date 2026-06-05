@@ -8,9 +8,14 @@ export async function callLLM(
   provider: MagiProvider,
   apiKey?: string
 ): Promise<string> {
+  const resolvedKey = apiKey || (provider === "openai" ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY);
+  if (!resolvedKey) {
+    throw new Error(`API key mancante per ${provider.toUpperCase()} — configurala nel pannello impostazioni (⚙ CONFIG).`);
+  }
+
   if (provider === "openai") {
     const client = new OpenAI({
-      apiKey: apiKey || process.env.OPENAI_API_KEY,
+      apiKey: resolvedKey,
     });
     const res = await client.chat.completions.create({
       model: "gpt-4o",
@@ -24,7 +29,7 @@ export async function callLLM(
   }
 
   const client = new Anthropic({
-    apiKey: apiKey || process.env.ANTHROPIC_API_KEY,
+    apiKey: resolvedKey,
   });
   const res = await client.messages.create({
     model: "claude-sonnet-4-20250514",

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("Casper error:", err);
     return NextResponse.json(
-      { sintesi: "Errore di sistema nell'unità Casper.", verdetto: "CAUTION" } as UnitResponse,
+      { sintesi: err instanceof Error ? err.message : "Errore di sistema nell'unità Casper.", verdetto: "CAUTION" } as UnitResponse,
       { status: 500 }
     );
   }
