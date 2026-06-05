@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { MagiFullResponse, MagiStato, MagiVerdict } from "@/lib/types";
+import { buildPrintHtml } from "@/lib/print-template";
 
 interface MagiReportProps {
   data: MagiFullResponse;
@@ -61,10 +62,13 @@ export default function MagiReport({ data }: MagiReportProps) {
   ] as const;
 
   function handlePrint() {
-    const prev = document.title;
-    document.title = `MAGI Report — ${new Date().toISOString().slice(0, 10)}`;
-    window.print();
-    document.title = prev;
+    const html = buildPrintHtml(data);
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    // Give fonts a moment to load before triggering print
+    win.onload = () => setTimeout(() => { win.print(); }, 400);
   }
 
   return (
