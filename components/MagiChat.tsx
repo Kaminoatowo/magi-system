@@ -46,17 +46,9 @@ export default function MagiChat() {
   }>({ melchior: null, balthasar: null, casper: null });
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setSettings(loadSettings());
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("magi-settings", JSON.stringify(settings));
-  }, [settings]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  useEffect(() => { setSettings(loadSettings()); }, []);
+  useEffect(() => { localStorage.setItem("magi-settings", JSON.stringify(settings)); }, [settings]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   function getApiKey() {
     return settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey;
@@ -70,9 +62,7 @@ export default function MagiChat() {
     setInput("");
     setLoading(true);
     setLiveUnits({ melchior: null, balthasar: null, casper: null });
-
-    const userMsg: ChatMessage = { role: "user", content: query, timestamp: new Date() };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [...prev, { role: "user", content: query, timestamp: new Date() }]);
 
     const payload = { query, provider: settings.provider, apiKey: getApiKey() || undefined };
 
@@ -97,67 +87,66 @@ export default function MagiChat() {
       const moderator: ModeratorResponse = await modRes.json();
 
       const full: MagiFullResponse = { query, melchior, balthasar, casper, moderator };
-      const magiMsg: ChatMessage = { role: "magi", content: full, timestamp: new Date() };
-      setMessages((prev) => [...prev, magiMsg]);
+      setMessages((prev) => [...prev, { role: "magi", content: full, timestamp: new Date() }]);
     } catch (err) {
       console.error(err);
-      const errMsg: ChatMessage = {
-        role: "magi",
-        content: "ERRORE DI SISTEMA — connessione alle unità MAGI interrotta.",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errMsg]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "magi", content: "ERRORE DI SISTEMA — connessione alle unità MAGI interrotta.", timestamp: new Date() },
+      ]);
     } finally {
       setLoading(false);
     }
   }
 
   const lastMagi = [...messages].reverse().find((m) => m.role === "magi" && typeof m.content !== "string");
-  const displayUnits =
-    loading
-      ? liveUnits
-      : lastMagi
-      ? {
-          melchior: (lastMagi.content as MagiFullResponse).melchior,
-          balthasar: (lastMagi.content as MagiFullResponse).balthasar,
-          casper: (lastMagi.content as MagiFullResponse).casper,
-        }
-      : { melchior: null, balthasar: null, casper: null };
+  const displayUnits = loading
+    ? liveUnits
+    : lastMagi
+    ? {
+        melchior: (lastMagi.content as MagiFullResponse).melchior,
+        balthasar: (lastMagi.content as MagiFullResponse).balthasar,
+        casper: (lastMagi.content as MagiFullResponse).casper,
+      }
+    : { melchior: null, balthasar: null, casper: null };
 
   const providerMeta = PROVIDER_LABEL[settings.provider];
 
   return (
-    <div className="flex flex-col h-screen" style={{ background: "#0a0a0a", color: "#E0E0D0" }}>
+    <div className="flex flex-col h-[100dvh]" style={{ background: "#0a0a0a", color: "#E0E0D0" }}>
       {/* Header */}
-      <div className="border-b px-6 py-3 flex items-center justify-between shrink-0" style={{ borderColor: "#2a2a2a", background: "#0d0d0d" }}>
-        <div className="font-mono">
+      <div
+        className="border-b px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between shrink-0 gap-2"
+        style={{ borderColor: "#2a2a2a", background: "#0d0d0d" }}
+      >
+        <div className="font-mono min-w-0">
           <span className="text-sm font-bold tracking-widest text-gray-200">MAGI SYSTEM</span>
-          <span className="text-xs text-gray-600 ml-3">NERV CENTRAL DOGMA — SUPERCOMPUTER ARRAY</span>
+          <span className="hidden sm:inline text-xs text-gray-600 ml-3">NERV CENTRAL DOGMA</span>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Provider badge */}
+        <div className="flex items-center gap-2 shrink-0">
           <div
             className="text-xs font-mono font-bold tracking-widest px-2 py-1 rounded border"
             style={{ borderColor: `${providerMeta.color}50`, color: providerMeta.color, background: `${providerMeta.color}10` }}
           >
             {providerMeta.label}
           </div>
-          <div className="text-xs font-mono text-gray-600">
-            {new Date().toISOString().replace("T", " ").slice(0, 19)} UTC
-          </div>
-          {/* Settings button */}
           <button
             onClick={() => setShowSettings(true)}
             className="text-gray-600 hover:text-gray-300 text-xs font-mono tracking-widest transition-colors border rounded px-2 py-1"
             style={{ borderColor: "#2a2a2a" }}
+            aria-label="Impostazioni"
           >
-            ⚙ CONFIG
+            <span className="hidden sm:inline">⚙ CONFIG</span>
+            <span className="sm:hidden">⚙</span>
           </button>
         </div>
       </div>
 
-      {/* Unit Panels */}
-      <div className="flex gap-3 px-6 py-4 shrink-0 border-b" style={{ borderColor: "#2a2a2a" }}>
+      {/* Unit Panels — side by side on sm+, stacked on xs */}
+      <div
+        className="flex flex-col sm:flex-row gap-2 px-3 sm:px-6 py-3 shrink-0 border-b"
+        style={{ borderColor: "#2a2a2a" }}
+      >
         {UNITS.map((unit) => (
           <NodePanel
             key={unit.key}
@@ -171,12 +160,12 @@ export default function MagiChat() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 font-mono text-sm">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-4 font-mono text-sm min-h-0">
         {messages.length === 0 && (
-          <div className="text-center text-gray-600 text-xs mt-12 space-y-2">
-            <div className="text-2xl tracking-widest">⬡ MAGI ⬡</div>
+          <div className="text-center text-gray-600 text-xs mt-8 sm:mt-12 space-y-2">
+            <div className="text-xl sm:text-2xl tracking-widest">⬡ MAGI ⬡</div>
             <div>SISTEMA OPERATIVO — IN ATTESA DI INPUT</div>
-            <div className="text-gray-700">Inserisci una query per avviare il processo deliberativo</div>
+            <div className="text-gray-700 text-xs px-4">Inserisci una query per avviare il processo deliberativo</div>
           </div>
         )}
 
@@ -184,7 +173,7 @@ export default function MagiChat() {
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "user" ? (
               <div
-                className="max-w-2xl rounded px-4 py-2 text-sm"
+                className="max-w-[85%] sm:max-w-2xl rounded px-3 sm:px-4 py-2 text-sm break-words"
                 style={{ background: "#1a1a2e", border: "1px solid #3B8BEB30", color: "#E0E0D0" }}
               >
                 <span className="text-xs text-blue-500 block mb-1">OPERATORE</span>
@@ -192,13 +181,13 @@ export default function MagiChat() {
               </div>
             ) : typeof msg.content === "string" ? (
               <div
-                className="max-w-2xl rounded px-4 py-2 text-xs"
+                className="max-w-[85%] sm:max-w-2xl rounded px-3 sm:px-4 py-2 text-xs break-words"
                 style={{ background: "#1a0a0a", border: "1px solid #E8902030", color: "#E89020" }}
               >
                 ⚠ {msg.content}
               </div>
             ) : (
-              <div className="w-full max-w-4xl">
+              <div className="w-full">
                 <MagiReport data={msg.content as MagiFullResponse} />
               </div>
             )}
@@ -209,7 +198,8 @@ export default function MagiChat() {
           <div className="flex justify-start">
             <div className="text-xs font-mono text-gray-500 flex items-center gap-2">
               <span className="text-green-400 animate-pulse">▋</span>
-              UNITÀ IN DELIBERAZIONE — attendere sintesi...
+              <span className="hidden sm:inline">UNITÀ IN DELIBERAZIONE — attendere sintesi...</span>
+              <span className="sm:hidden">DELIBERAZIONE IN CORSO...</span>
             </div>
           </div>
         )}
@@ -218,45 +208,39 @@ export default function MagiChat() {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="shrink-0 px-6 py-4 border-t" style={{ borderColor: "#2a2a2a", background: "#0d0d0d" }}>
-        <div className="flex gap-3 items-center">
-          <span className="text-green-400 font-mono text-sm shrink-0">MAGI:~$</span>
+      <form
+        onSubmit={handleSubmit}
+        className="shrink-0 px-3 sm:px-6 py-3 sm:py-4 border-t"
+        style={{ borderColor: "#2a2a2a", background: "#0d0d0d" }}
+      >
+        <div className="flex gap-2 sm:gap-3 items-center">
+          <span className="text-green-400 font-mono text-xs sm:text-sm shrink-0">$</span>
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
-            placeholder="Inserisci query per il sistema MAGI..."
-            className="flex-1 bg-transparent border-b font-mono text-sm outline-none placeholder-gray-700 transition-colors"
-            style={{
-              borderColor: loading ? "#2a2a2a" : "#3B8BEB60",
-              color: "#E0E0D0",
-            }}
+            placeholder="Inserisci query..."
+            className="flex-1 bg-transparent border-b font-mono text-sm outline-none placeholder-gray-700 transition-colors min-w-0"
+            style={{ borderColor: loading ? "#2a2a2a" : "#3B8BEB60", color: "#E0E0D0" }}
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="px-4 py-1.5 rounded font-mono text-xs font-bold tracking-widest transition-all border disabled:opacity-30"
+            className="px-3 sm:px-4 py-1.5 rounded font-mono text-xs font-bold tracking-widest transition-all border disabled:opacity-30 shrink-0"
             style={{ borderColor: "#3B8BEB", color: "#3B8BEB", background: "transparent" }}
             onMouseEnter={(e) => {
               if (!loading && input.trim()) (e.target as HTMLButtonElement).style.background = "#3B8BEB20";
             }}
-            onMouseLeave={(e) => {
-              (e.target as HTMLButtonElement).style.background = "transparent";
-            }}
+            onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = "transparent"; }}
           >
             INVIA
           </button>
         </div>
       </form>
 
-      {/* Settings overlay */}
       {showSettings && (
-        <SettingsPanel
-          settings={settings}
-          onChange={setSettings}
-          onClose={() => setShowSettings(false)}
-        />
+        <SettingsPanel settings={settings} onChange={setSettings} onClose={() => setShowSettings(false)} />
       )}
     </div>
   );

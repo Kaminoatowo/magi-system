@@ -25,7 +25,7 @@ const verdictBg: Record<MagiVerdict, string> = {
 export default function NodePanel({ name, subtitle, accent, data, loading }: NodePanelProps) {
   return (
     <div
-      className="flex-1 min-w-0 border rounded p-4 flex flex-col gap-3 transition-all duration-300 relative overflow-hidden"
+      className="flex-1 min-w-0 border rounded p-3 sm:p-4 flex sm:flex-col flex-row gap-3 transition-all duration-300 relative overflow-hidden"
       style={{
         borderColor: loading ? accent : "#2a2a2a",
         background: "#111111",
@@ -42,15 +42,16 @@ export default function NodePanel({ name, subtitle, accent, data, loading }: Nod
         />
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <span className="text-xs font-bold tracking-widest" style={{ color: accent }}>
+      {/* Identity */}
+      <div className="flex items-center gap-2 sm:justify-between shrink-0">
+        <div className="min-w-0">
+          <span className="text-xs font-bold tracking-widest block truncate" style={{ color: accent }}>
             {name}
           </span>
-          <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
+          <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">{subtitle}</p>
         </div>
         <div
-          className="w-2 h-2 rounded-full transition-all duration-300"
+          className="w-2 h-2 rounded-full shrink-0 transition-all duration-300"
           style={{
             backgroundColor: loading ? accent : data ? accent : "#2a2a2a",
             boxShadow: loading ? `0 0 8px ${accent}` : "none",
@@ -59,28 +60,33 @@ export default function NodePanel({ name, subtitle, accent, data, loading }: Nod
         />
       </div>
 
-      <div className="flex-1 min-h-[60px]">
+      {/* Content */}
+      <div className="flex-1 min-w-0 sm:min-h-[60px] flex flex-col justify-center gap-2">
         {loading && (
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <span style={{ color: accent }}>▋</span>
-            <span className="animate-pulse">ELABORAZIONE IN CORSO...</span>
+            <span className="animate-pulse hidden sm:inline">ELABORAZIONE IN CORSO...</span>
+            <span className="animate-pulse sm:hidden">...</span>
           </div>
         )}
         {!loading && data && (
-          <p className="text-sm text-gray-300 leading-relaxed">{data.sintesi}</p>
+          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed line-clamp-3 sm:line-clamp-none">
+            {data.sintesi}
+          </p>
         )}
         {!loading && !data && (
-          <p className="text-xs text-gray-600 italic">IN ATTESA DI INPUT</p>
+          <p className="text-xs text-gray-600 italic hidden sm:block">IN ATTESA DI INPUT</p>
+        )}
+
+        {/* Verdict inline on mobile, below on desktop */}
+        {data && !loading && (
+          <div
+            className={`border rounded px-2 sm:px-3 py-1 sm:py-1.5 text-center text-xs font-bold tracking-widest w-fit sm:w-full ${verdictColor[data.verdetto]} ${verdictBg[data.verdetto]}`}
+          >
+            {data.verdetto}
+          </div>
         )}
       </div>
-
-      {data && !loading && (
-        <div
-          className={`border rounded px-3 py-1.5 text-center text-xs font-bold tracking-widest ${verdictColor[data.verdetto]} ${verdictBg[data.verdetto]}`}
-        >
-          {data.verdetto}
-        </div>
-      )}
     </div>
   );
 }
