@@ -48,8 +48,17 @@ export default function MagiReport({ data }: MagiReportProps) {
     { key: "casper", label: "CASPER-3", sub: "DONNA", resp: data.casper },
   ] as const;
 
+  function handlePrint() {
+    // Store current title, set a clean one for the print dialog
+    const prev = document.title;
+    document.title = `MAGI Report — ${new Date().toISOString().slice(0, 10)}`;
+    window.print();
+    document.title = prev;
+  }
+
   return (
     <div
+      id="magi-print-target"
       className={`rounded border font-mono text-xs leading-relaxed transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
       style={{ borderColor: "#2a2a2a", background: "#0d0d0d" }}
     >
@@ -109,9 +118,30 @@ export default function MagiReport({ data }: MagiReportProps) {
         )}
       </div>
 
-      {/* Footer badge */}
-      <div className="px-3 sm:px-4 py-2 border-t text-center font-bold tracking-widest text-sm" style={{ borderColor: "#2a2a2a", color }}>
-        {statoLabel[stato]}
+      {/* Footer: stato badge + print button */}
+      <div
+        className="px-3 sm:px-4 py-2 border-t flex items-center justify-between gap-3"
+        style={{ borderColor: "#2a2a2a" }}
+      >
+        <span className="font-bold tracking-widest text-sm" style={{ color }}>
+          {statoLabel[stato]}
+        </span>
+        <button
+          onClick={handlePrint}
+          className="no-print shrink-0 border rounded px-3 py-1 text-xs font-bold tracking-widest transition-colors"
+          style={{ borderColor: "#2a2a2a", color: "#6b7280" }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = color;
+            (e.currentTarget as HTMLButtonElement).style.color = color;
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "#2a2a2a";
+            (e.currentTarget as HTMLButtonElement).style.color = "#6b7280";
+          }}
+          aria-label="Stampa report"
+        >
+          ⎙ STAMPA
+        </button>
       </div>
     </div>
   );

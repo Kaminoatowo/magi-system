@@ -40,6 +40,40 @@ body::after {
   background: #2a2a2a;
 }
 
+/* ── Print styles ─────────────────────────────────────────── */
+@media print {
+  /* Hide everything except the report */
+  body > * { display: none !important; }
+  body::after { display: none !important; }
+
+  /* Re-show only the print target */
+  #magi-print-target,
+  #magi-print-target * {
+    display: revert !important;
+    visibility: visible !important;
+  }
+
+  #magi-print-target {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Force readable colors on paper */
+  #magi-print-target {
+    background: #ffffff !important;
+    color: #111111 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide the print button itself */
+  .no-print { display: none !important; }
+}
+
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
