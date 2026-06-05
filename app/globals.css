@@ -42,32 +42,61 @@ body::after {
 
 /* ── Print styles ─────────────────────────────────────────── */
 @media print {
-  /* Hide everything except the report */
-  body > * { display: none !important; }
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+
+  /* Hide the whole page, then reveal only the report via visibility
+     (works regardless of how deep the element is in the DOM tree) */
+  body {
+    visibility: hidden !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
   body::after { display: none !important; }
 
-  /* Re-show only the print target */
-  #magi-print-target,
+  #magi-print-target {
+    visibility: visible !important;
+    position: fixed !important;
+    inset: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+
+  /* Make every descendant visible */
   #magi-print-target * {
-    display: revert !important;
     visibility: visible !important;
   }
 
-  #magi-print-target {
-    position: fixed;
-    inset: 0;
-    margin: 0;
-    padding: 0;
-    border: none !important;
-    border-radius: 0 !important;
+  /* All text defaults to near-black so nothing disappears on white paper */
+  #magi-print-target * {
+    color: #1a1a1a !important;
+    border-color: #cccccc !important;
+    background: transparent !important;
   }
 
-  /* Force readable colors on paper */
-  #magi-print-target {
-    background: #ffffff !important;
-    color: #111111 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  /* Re-apply accent colors for the elements that need them */
+  #magi-print-target [data-print-color] {
+    color: attr(data-print-color) !important;
+  }
+  #magi-print-target .print-melchior { color: #1a5fb8 !important; }
+  #magi-print-target .print-balthasar { color: #177346 !important; }
+  #magi-print-target .print-casper { color: #9a5c00 !important; }
+  #magi-print-target .print-approve { color: #166534 !important; }
+  #magi-print-target .print-reject { color: #991b1b !important; }
+  #magi-print-target .print-caution { color: #92400e !important; }
+  #magi-print-target .print-stato { color: #1e3a5f !important; font-weight: bold; }
+
+  /* Verdict badge borders */
+  #magi-print-target .print-approve { border-color: #166534 !important; }
+  #magi-print-target .print-reject  { border-color: #991b1b !important; }
+  #magi-print-target .print-caution { border-color: #92400e !important; }
+
+  /* Section dividers */
+  #magi-print-target .print-section-bg {
+    background: #f3f4f6 !important;
   }
 
   /* Hide the print button itself */

@@ -25,10 +25,22 @@ const verdictColor: Record<MagiVerdict, string> = {
   CAUTION: "#fbbf24",
 };
 
+const verdictPrintClass: Record<MagiVerdict, string> = {
+  APPROVE: "print-approve",
+  REJECT: "print-reject",
+  CAUTION: "print-caution",
+};
+
 const unitAccent: Record<string, string> = {
   melchior: "#3B8BEB",
   balthasar: "#1DB87E",
   casper: "#E89020",
+};
+
+const unitPrintClass: Record<string, string> = {
+  melchior: "print-melchior",
+  balthasar: "print-balthasar",
+  casper: "print-casper",
 };
 
 export default function MagiReport({ data }: MagiReportProps) {
@@ -49,7 +61,6 @@ export default function MagiReport({ data }: MagiReportProps) {
   ] as const;
 
   function handlePrint() {
-    // Store current title, set a clean one for the print dialog
     const prev = document.title;
     document.title = `MAGI Report — ${new Date().toISOString().slice(0, 10)}`;
     window.print();
@@ -81,13 +92,20 @@ export default function MagiReport({ data }: MagiReportProps) {
         {units.map(({ key, label, sub, resp }) => (
           <div key={key} className="px-3 sm:px-4 py-3 flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
             <div className="flex items-center gap-2 sm:w-44 shrink-0">
-              <span className="font-bold tracking-wider" style={{ color: unitAccent[key] }}>
+              <span
+                className={`font-bold tracking-wider ${unitPrintClass[key]}`}
+                style={{ color: unitAccent[key] }}
+              >
                 {label}
               </span>
               <span className="text-gray-600 hidden sm:inline">/ {sub}</span>
               <span
-                className="ml-auto sm:ml-0 text-xs font-bold px-1.5 py-0.5 rounded border"
-                style={{ color: verdictColor[resp.verdetto], borderColor: `${verdictColor[resp.verdetto]}40`, background: `${verdictColor[resp.verdetto]}10` }}
+                className={`ml-auto sm:ml-0 text-xs font-bold px-1.5 py-0.5 rounded border ${verdictPrintClass[resp.verdetto]}`}
+                style={{
+                  color: verdictColor[resp.verdetto],
+                  borderColor: `${verdictColor[resp.verdetto]}40`,
+                  background: `${verdictColor[resp.verdetto]}10`,
+                }}
               >
                 {resp.verdetto}
               </span>
@@ -99,16 +117,16 @@ export default function MagiReport({ data }: MagiReportProps) {
 
       {/* Verdict */}
       <div
-        className="px-3 sm:px-4 py-3 border-t space-y-1"
+        className="print-section-bg px-3 sm:px-4 py-3 border-t space-y-1"
         style={{ borderColor: "#2a2a2a", background: `${color}08` }}
       >
         <div className="flex flex-wrap gap-x-3 gap-y-1">
           <span className="text-gray-600">STATO:</span>
-          <span className="font-bold tracking-widest" style={{ color }}>{stato}</span>
+          <span className={`font-bold tracking-widest print-stato`} style={{ color }}>{stato}</span>
         </div>
         <div>
           <span className="text-gray-600">VERDETTO: </span>
-          <span className="break-words" style={{ color }}>{data.moderator.verdetto_finale}</span>
+          <span className={`break-words print-stato`} style={{ color }}>{data.moderator.verdetto_finale}</span>
         </div>
         {data.moderator.nota && (
           <div>
@@ -123,7 +141,7 @@ export default function MagiReport({ data }: MagiReportProps) {
         className="px-3 sm:px-4 py-2 border-t flex items-center justify-between gap-3"
         style={{ borderColor: "#2a2a2a" }}
       >
-        <span className="font-bold tracking-widest text-sm" style={{ color }}>
+        <span className={`font-bold tracking-widest text-sm print-stato`} style={{ color }}>
           {statoLabel[stato]}
         </span>
         <button
@@ -131,12 +149,12 @@ export default function MagiReport({ data }: MagiReportProps) {
           className="no-print shrink-0 border rounded px-3 py-1 text-xs font-bold tracking-widest transition-colors"
           style={{ borderColor: "#2a2a2a", color: "#6b7280" }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = color;
-            (e.currentTarget as HTMLButtonElement).style.color = color;
+            (e.currentTarget).style.borderColor = color;
+            (e.currentTarget).style.color = color;
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "#2a2a2a";
-            (e.currentTarget as HTMLButtonElement).style.color = "#6b7280";
+            (e.currentTarget).style.borderColor = "#2a2a2a";
+            (e.currentTarget).style.color = "#6b7280";
           }}
           aria-label="Stampa report"
         >
