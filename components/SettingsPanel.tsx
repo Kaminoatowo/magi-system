@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { MagiSettings, MagiProvider } from "@/lib/types";
 
 interface SettingsPanelProps {
@@ -16,6 +17,7 @@ const PROVIDERS: { value: MagiProvider; label: string; model: string; color: str
 
 export default function SettingsPanel({ settings, onChange, onClose }: SettingsPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -141,7 +143,19 @@ export default function SettingsPanel({ settings, onChange, onClose }: SettingsP
           </div>
         </div>
 
-        <div className="px-5 py-4 border-t" style={{ borderColor: "#2a2a2a" }}>
+        <div className="px-5 py-4 border-t space-y-2" style={{ borderColor: "#2a2a2a" }}>
+          <button
+            onClick={() => { onClose(); router.push("/custom-magi"); }}
+            className="w-full py-2 rounded border text-xs font-bold tracking-widest transition-all flex items-center justify-between px-4"
+            style={{ borderColor: "#2a2a2a", color: "#9ca3af", background: "transparent" }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#3B8BEB50"; e.currentTarget.style.color = "#E0E0D0"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#9ca3af"; }}
+          >
+            <span>⬡ TRIPLETTA PERSONALIZZATA</span>
+            <span style={{ color: settings.triplet?.attiva ? "#3B8BEB" : "#3a3a3a" }}>
+              {settings.triplet?.attiva ? "● ATTIVA" : "○ INATTIVA"}
+            </span>
+          </button>
           <button
             onClick={onClose}
             className="w-full py-2.5 rounded border text-xs font-bold tracking-widest transition-all"

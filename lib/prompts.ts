@@ -16,6 +16,17 @@ La tua personalità rappresenta la dimensione personale, istintiva ed emotiva de
 Rispondi SOLO con un oggetto JSON valido, senza testo aggiuntivo né backtick:
 {"sintesi":"la tua analisi in 1-2 frasi","verdetto":"APPROVE"|"REJECT"|"CAUTION"}`;
 
+import type { MagiUnitConfig } from "@/lib/types";
+
+export function buildCustomPrompt(unit: MagiUnitConfig): string {
+  return `Sei ${unit.nome || "un'unità MAGI"}, una delle tre unità cognitive del sistema supercomputer MAGI.
+Il tuo ambito di competenza è: ${unit.ambito}.
+${unit.descrizione}
+
+Rispondi SOLO con un oggetto JSON valido, senza testo aggiuntivo né backtick:
+{"sintesi":"la tua analisi in 1-2 frasi","verdetto":"APPROVE"|"REJECT"|"CAUTION"}`;
+}
+
 export const MODERATOR_PROMPT = `Sei il layer di integrazione del sistema MAGI. Ricevi tre risposte indipendenti alla stessa query da Melchior (scienziata), Balthasar (madre) e Casper (donna).
 Determina lo stato: CONSENSUS se tutti e tre concordano, MAJORITY se 2 su 3 concordano, DEADLOCK se tutte e tre divergono.
 

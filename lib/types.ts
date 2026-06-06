@@ -27,8 +27,22 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+export interface MagiUnitConfig {
+  nome: string;
+  ambito: string;
+  descrizione: string;
+}
+
+export interface MagiTripletConfig {
+  attiva: boolean;
+  melchior: MagiUnitConfig;
+  balthasar: MagiUnitConfig;
+  casper: MagiUnitConfig;
+}
+
 export interface MagiSettings {
   provider: MagiProvider;
   anthropicKey: string;
   openaiKey: string;
+  triplet?: MagiTripletConfig;
 }

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, FormEvent } from "react";
 import { ChatMessage, MagiFullResponse, UnitResponse, ModeratorResponse, MagiSettings } from "@/lib/types";
+import { buildCustomPrompt } from "@/lib/prompts";
 import NodePanel from "./NodePanel";
 import MagiReport from "./MagiReport";
 import SettingsPanel from "./SettingsPanel";
@@ -92,7 +93,14 @@ export default function MagiChat() {
       return;
     }
 
-    const payload = { query, provider: settings.provider, apiKey: getApiKey() || undefined };
+    const basePayload = { query, provider: settings.provider, apiKey: getApiKey() || undefined };
+
+    const customPrompts: Record<string, string | undefined> = {};
+    if (settings.triplet?.attiva) {
+      customPrompts.melchior = buildCustomPrompt(settings.triplet.melchior);
+      customPrompts.balthasar = buildCustomPrompt(settings.triplet.balthasar);
+      customPrompts.casper = buildCustomPrompt(settings.triplet.casper);
+    }
 
     try {
       const [melchior, balthasar, casper] = await Promise.all(
@@ -100,7 +108,7 @@ export default function MagiChat() {
           fetch(unit.endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ ...basePayload, customPrompt: customPrompts[unit.key] }),
           }).then((r) => r.json() as Promise<UnitResponse>)
         )
       );
@@ -110,7 +118,7 @@ export default function MagiChat() {
       const modRes = await fetch("/api/moderator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, melchior, balthasar, casper }),
+        body: JSON.stringify({ ...basePayload, melchior, balthasar, casper }),
       });
       const moderator: ModeratorResponse = await modRes.json();
 
@@ -175,16 +183,19 @@ export default function MagiChat() {
         className="flex flex-col sm:flex-row gap-2 px-3 sm:px-6 py-3 shrink-0 border-b"
         style={{ borderColor: "#2a2a2a" }}
       >
-        {UNITS.map((unit) => (
-          <NodePanel
-            key={unit.key}
-            name={unit.name}
-            subtitle={unit.subtitle}
-            accent={unit.accent}
-            data={displayUnits[unit.key]}
-            loading={loading}
-          />
-        ))}
+        {UNITS.map((unit) => {
+          const custom = settings.triplet?.attiva ? settings.triplet[unit.key] : null;
+          return (
+            <NodePanel
+              key={unit.key}
+              name={custom?.nome?.trim() || unit.name}
+              subtitle={custom?.ambito?.trim() || unit.subtitle}
+              accent={unit.accent}
+              data={displayUnits[unit.key]}
+              loading={loading}
+            />
+          );
+        })}
       </div>
 
       {/* Chat Area */}
