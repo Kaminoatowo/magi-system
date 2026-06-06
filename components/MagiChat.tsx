@@ -1,22 +1,22 @@
 "use client";
 
-import { useState, useRef, useEffect, FormEvent } from "react";
-import { ChatMessage, MagiFullResponse, UnitResponse, ModeratorResponse, MagiSettings } from "@/lib/types";
+import { useState, useRef, useEffect, useCallback, FormEvent } from "react";
+import Link from "next/link";
+import { ChatMessage, MagiFullResponse, UnitResponse, ModeratorResponse, MagiSettings, MagiSession } from "@/lib/types";
 import { buildCustomPrompt } from "@/lib/prompts";
+import { MAGI_TRIPLETS, COLOR_MAP } from "@/lib/triplets";
 import NodePanel from "./NodePanel";
 import MagiReport from "./MagiReport";
 import SettingsPanel from "./SettingsPanel";
 
-const UNITS = [
-  { key: "melchior" as const, name: "MELCHIOR-1", subtitle: "SCIENZIATA", accent: "#3B8BEB", endpoint: "/api/melchior" },
-  { key: "balthasar" as const, name: "BALTHASAR-2", subtitle: "MADRE", accent: "#1DB87E", endpoint: "/api/balthasar" },
-  { key: "casper" as const, name: "CASPER-3", subtitle: "DONNA", accent: "#E89020", endpoint: "/api/casper" },
-];
+const UNIT_ENDPOINTS = ["/api/melchior", "/api/balthasar", "/api/casper"];
+const UNIT_KEYS = ["melchior", "balthasar", "casper"] as const;
 
 const DEFAULT_SETTINGS: MagiSettings = {
   provider: "anthropic",
   anthropicKey: "",
   openaiKey: "",
+  activeTripletId: "evangelion-classic",
 };
 
 function loadSettings(): MagiSettings {
@@ -27,6 +27,17 @@ function loadSettings(): MagiSettings {
   } catch {
     return DEFAULT_SETTINGS;
   }
+}
+
+function saveSession(session: MagiSession) {
+  try {
+    const raw = localStorage.getItem("magi-sessions");
+    const sessions: MagiSession[] = raw ? JSON.parse(raw) : [];
+    const idx = sessions.findIndex((s) => s.id === session.id);
+    if (idx >= 0) sessions[idx] = session;
+    else sessions.unshift(session);
+    localStorage.setItem("magi-sessions", JSON.stringify(sessions.slice(0, 50)));
+  } catch {}
 }
 
 const PROVIDER_LABEL: Record<string, { label: string; color: string }> = {
@@ -45,15 +56,78 @@ export default function MagiChat() {
     balthasar: UnitResponse | null;
     casper: UnitResponse | null;
   }>({ melchior: null, balthasar: null, casper: null });
+  const sessionIdRef = useRef<string>(
+    typeof crypto !== "undefined" ? crypto.randomUUID() : String(Date.now())
+  );
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setSettings(loadSettings()); }, []);
-  useEffect(() => { localStorage.setItem("magi-settings", JSON.stringify(settings)); }, [settings]);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    const loaded = loadSettings();
+    setSettings(loaded);
+
+    // Check for pending session to restore
+    const pending = localStorage.getItem("magi-pending-session");
+    if (pending) {
+      try {
+        const session: MagiSession = JSON.parse(pending);
+        const restored = session.messages.map((m) => ({
+          ...m,
+          timestamp: new Date(m.timestamp as unknown as string),
+        }));
+        setMessages(restored);
+        sessionIdRef.current = session.id;
+        setSettings((s) => ({ ...s, ...loaded, activeTripletId: session.tripletId }));
+        localStorage.removeItem("magi-pending-session");
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("magi-settings", JSON.stringify(settings));
+  }, [settings]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   function getApiKey() {
     return settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey;
   }
+
+  function resolvePrompts(): (string | undefined)[] {
+    if (settings.activeTripletId === "custom" && settings.triplet?.attiva) {
+      return [
+        buildCustomPrompt(settings.triplet.melchior),
+        buildCustomPrompt(settings.triplet.balthasar),
+        buildCustomPrompt(settings.triplet.casper),
+      ];
+    }
+    const triplet =
+      MAGI_TRIPLETS.find((t) => t.id === settings.activeTripletId) ?? MAGI_TRIPLETS[0];
+    return triplet.units.map((u) => u.systemPrompt);
+  }
+
+  const updateSession = useCallback(
+    (msgs: ChatMessage[], lastQuery: string) => {
+      const activeTriplet =
+        MAGI_TRIPLETS.find((t) => t.id === settings.activeTripletId) ?? MAGI_TRIPLETS[0];
+      const userMessages = msgs.filter((m) => m.role === "user");
+      const session: MagiSession = {
+        id: sessionIdRef.current,
+        tripletId: settings.activeTripletId,
+        tripletName:
+          settings.activeTripletId === "custom"
+            ? settings.triplet?.melchior?.nome || "Personalizzata"
+            : activeTriplet.name,
+        startedAt: msgs[0]?.timestamp?.toISOString() ?? new Date().toISOString(),
+        queries: userMessages.length,
+        lastQuery,
+        messages: msgs,
+      };
+      saveSession(session);
+    },
+    [settings]
+  );
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -63,10 +137,12 @@ export default function MagiChat() {
     setInput("");
     setLoading(true);
     setLiveUnits({ melchior: null, balthasar: null, casper: null });
-    setMessages((prev) => [...prev, { role: "user", content: query, timestamp: new Date() }]);
 
-    // Test mode: /test bypasses all LLM calls
-    if (query.trim() === "/test") {
+    const userMsg: ChatMessage = { role: "user", content: query, timestamp: new Date() };
+    setMessages((prev) => [...prev, userMsg]);
+
+    // Test mode
+    if (query === "/test") {
       const testResponse: MagiFullResponse = {
         query: "[TEST] Valutare l'adozione del Progetto E su scala globale.",
         melchior: {
@@ -87,28 +163,27 @@ export default function MagiChat() {
           nota: "Casper-3 ha espresso dissenso istintivo. Si consiglia revisione umana prima dell'esecuzione finale.",
         },
       };
+      const magiMsg: ChatMessage = { role: "magi", content: testResponse, timestamp: new Date() };
       setLiveUnits({ melchior: testResponse.melchior, balthasar: testResponse.balthasar, casper: testResponse.casper });
-      setMessages((prev) => [...prev, { role: "magi", content: testResponse, timestamp: new Date() }]);
+      setMessages((prev) => {
+        const next = [...prev, magiMsg];
+        updateSession(next, query);
+        return next;
+      });
       setLoading(false);
       return;
     }
 
     const basePayload = { query, provider: settings.provider, apiKey: getApiKey() || undefined };
-
-    const customPrompts: Record<string, string | undefined> = {};
-    if (settings.triplet?.attiva) {
-      customPrompts.melchior = buildCustomPrompt(settings.triplet.melchior);
-      customPrompts.balthasar = buildCustomPrompt(settings.triplet.balthasar);
-      customPrompts.casper = buildCustomPrompt(settings.triplet.casper);
-    }
+    const prompts = resolvePrompts();
 
     try {
       const [melchior, balthasar, casper] = await Promise.all(
-        UNITS.map((unit) =>
-          fetch(unit.endpoint, {
+        UNIT_ENDPOINTS.map((endpoint, i) =>
+          fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...basePayload, customPrompt: customPrompts[unit.key] }),
+            body: JSON.stringify({ ...basePayload, customPrompt: prompts[i] }),
           }).then((r) => r.json() as Promise<UnitResponse>)
         )
       );
@@ -123,7 +198,12 @@ export default function MagiChat() {
       const moderator: ModeratorResponse = await modRes.json();
 
       const full: MagiFullResponse = { query, melchior, balthasar, casper, moderator };
-      setMessages((prev) => [...prev, { role: "magi", content: full, timestamp: new Date() }]);
+      const magiMsg: ChatMessage = { role: "magi", content: full, timestamp: new Date() };
+      setMessages((prev) => {
+        const next = [...prev, magiMsg];
+        updateSession(next, query);
+        return next;
+      });
     } catch (err) {
       console.error(err);
       setMessages((prev) => [
@@ -148,16 +228,27 @@ export default function MagiChat() {
 
   const providerMeta = PROVIDER_LABEL[settings.provider];
 
+  const activeTriplet =
+    settings.activeTripletId === "custom"
+      ? null
+      : (MAGI_TRIPLETS.find((t) => t.id === settings.activeTripletId) ?? MAGI_TRIPLETS[0]);
+
   return (
-    <div className="flex flex-col h-[100dvh] overflow-hidden" style={{ background: "#0a0a0a", color: "#E0E0D0" }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: "#0a0a0a", color: "#E0E0D0" }}>
       {/* Header */}
       <div
         className="border-b px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between shrink-0 gap-2"
         style={{ borderColor: "#2a2a2a", background: "#0d0d0d" }}
       >
-        <div className="font-mono min-w-0">
-          <span className="text-sm font-bold tracking-widest text-gray-200">MAGI SYSTEM</span>
-          <span className="hidden sm:inline text-xs text-gray-600 ml-3">NERV CENTRAL DOGMA</span>
+        <div className="font-mono min-w-0 flex items-center gap-3">
+          <span className="text-sm font-bold tracking-widest text-gray-200 shrink-0">MAGI SYSTEM</span>
+          <Link
+            href="/market"
+            className="hidden sm:inline-flex items-center gap-1 text-xs tracking-widest transition-colors hover:text-gray-300 truncate"
+            style={{ color: "#4a4a4a" }}
+          >
+            ⬡ {activeTriplet?.name ?? (settings.triplet?.melchior?.nome || "Personalizzata")}
+          </Link>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <div
@@ -178,20 +269,26 @@ export default function MagiChat() {
         </div>
       </div>
 
-      {/* Unit Panels — side by side on sm+, stacked on xs */}
+      {/* Unit Panels */}
       <div
         className="flex flex-col sm:flex-row gap-2 px-3 sm:px-6 py-3 shrink-0 border-b"
         style={{ borderColor: "#2a2a2a" }}
       >
-        {UNITS.map((unit) => {
-          const custom = settings.triplet?.attiva ? settings.triplet[unit.key] : null;
+        {UNIT_KEYS.map((key, i) => {
+          const unit = activeTriplet?.units[i];
+          const customUnit = settings.activeTripletId === "custom" && settings.triplet?.attiva
+            ? settings.triplet[key]
+            : null;
+          const name = unit?.name ?? customUnit?.nome?.trim() ?? ["MELCHIOR-1", "BALTHASAR-2", "CASPER-3"][i];
+          const subtitle = unit?.role ?? customUnit?.ambito?.trim() ?? ["SCIENZIATA", "MADRE", "DONNA"][i];
+          const accent = unit ? COLOR_MAP[unit.color] : ["#3B8BEB", "#1DB87E", "#E89020"][i];
           return (
             <NodePanel
-              key={unit.key}
-              name={custom?.nome?.trim() || unit.name}
-              subtitle={custom?.ambito?.trim() || unit.subtitle}
-              accent={unit.accent}
-              data={displayUnits[unit.key]}
+              key={key}
+              name={name}
+              subtitle={subtitle}
+              accent={accent}
+              data={displayUnits[key]}
               loading={loading}
             />
           );

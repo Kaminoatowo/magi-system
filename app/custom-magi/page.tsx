@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { MagiSettings, MagiTripletConfig, MagiUnitConfig } from "@/lib/types";
 
 const EMPTY_UNIT: MagiUnitConfig = { nome: "", ambito: "", descrizione: "" };
@@ -61,11 +60,18 @@ function loadTriplet(): MagiTripletConfig {
 function saveTriplet(triplet: MagiTripletConfig) {
   const raw = localStorage.getItem("magi-settings");
   const existing: Partial<MagiSettings> = raw ? JSON.parse(raw) : {};
-  localStorage.setItem("magi-settings", JSON.stringify({ ...existing, triplet }));
+  const activeTripletId = triplet.attiva
+    ? "custom"
+    : existing.activeTripletId === "custom"
+    ? "evangelion-classic"
+    : existing.activeTripletId;
+  localStorage.setItem(
+    "magi-settings",
+    JSON.stringify({ ...existing, triplet, activeTripletId })
+  );
 }
 
 export default function CustomMagiPage() {
-  const router = useRouter();
   const [triplet, setTriplet] = useState<MagiTripletConfig>(DEFAULT_TRIPLET);
   const [saved, setSaved] = useState(false);
 
@@ -93,22 +99,14 @@ export default function CustomMagiPage() {
   );
 
   return (
-    <div className="min-h-[100dvh] font-mono text-sm" style={{ background: "#0a0a0a", color: "#E0E0D0" }}>
+    <div className="min-h-full font-mono text-sm" style={{ background: "#0a0a0a", color: "#E0E0D0" }}>
       {/* Header */}
       <div
-        className="sticky top-0 z-10 border-b px-4 sm:px-6 py-3 flex items-center gap-4"
+        className="sticky top-0 z-10 border-b px-4 sm:px-6 py-3 flex items-center gap-3"
         style={{ borderColor: "#2a2a2a", background: "#0d0d0d" }}
       >
-        <button
-          onClick={() => router.push("/")}
-          className="text-gray-600 hover:text-gray-300 text-xs tracking-widest transition-colors shrink-0"
-        >
-          ← INDIETRO
-        </button>
-        <div className="min-w-0">
-          <span className="text-sm font-bold tracking-widest text-gray-200">MAGI SYSTEM</span>
-          <span className="hidden sm:inline text-xs text-gray-600 ml-3">CONFIGURAZIONE TRIPLETTA</span>
-        </div>
+        <span className="text-sm font-bold tracking-widest text-gray-200">PERSONALIZZA</span>
+        <span className="hidden sm:inline text-xs text-gray-600">Definisci una tripletta personalizzata</span>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">

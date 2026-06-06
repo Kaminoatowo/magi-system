@@ -40,9 +40,36 @@ export interface MagiTripletConfig {
   casper: MagiUnitConfig;
 }
 
+export interface MagiUnit {
+  id: "unit_1" | "unit_2" | "unit_3";
+  name: string;
+  role: string;
+  color: "blue" | "green" | "amber";
+  systemPrompt: string;
+}
+
+export interface MagiTriplet {
+  id: string;
+  name: string;
+  description: string;
+  domain: "general" | "science" | "law" | "daily";
+  units: [MagiUnit, MagiUnit, MagiUnit];
+}
+
+export interface MagiSession {
+  id: string;
+  tripletId: string;
+  tripletName: string;
+  startedAt: string;
+  queries: number;
+  lastQuery: string;
+  messages: ChatMessage[];
+}
+
 export interface MagiSettings {
   provider: MagiProvider;
   anthropicKey: string;
   openaiKey: string;
   triplet?: MagiTripletConfig;
+  activeTripletId: string;
 }
