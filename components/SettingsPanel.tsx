@@ -151,7 +151,7 @@ export default function SettingsPanel({ settings, onChange, onClose }: SettingsP
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#3B8BEB50"; e.currentTarget.style.color = "#E0E0D0"; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#9ca3af"; }}
           >
-            <span>⬡ TRIPLETTA PERSONALIZZATA</span>
+            <span>PERSONALIZZA</span>
             <span style={{ color: settings.triplet?.attiva ? "#3B8BEB" : "#3a3a3a" }}>
               {settings.triplet?.attiva ? "● ATTIVA" : "○ INATTIVA"}
             </span>
