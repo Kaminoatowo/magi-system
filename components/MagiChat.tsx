@@ -64,6 +64,34 @@ export default function MagiChat() {
     setLiveUnits({ melchior: null, balthasar: null, casper: null });
     setMessages((prev) => [...prev, { role: "user", content: query, timestamp: new Date() }]);
 
+    // Test mode: /test bypasses all LLM calls
+    if (query.trim() === "/test") {
+      const testResponse: MagiFullResponse = {
+        query: "[TEST] Valutare l'adozione del Progetto E su scala globale.",
+        melchior: {
+          sintesi: "L'analisi statistica dei dati disponibili indica una probabilità del 73% di successo operativo. Le variabili di rischio rientrano nei parametri accettabili. Raccomando l'approvazione con monitoraggio continuo degli indicatori chiave.",
+          verdetto: "APPROVE",
+        },
+        balthasar: {
+          sintesi: "Le implicazioni sul benessere delle popolazioni coinvolte sono significative ma gestibili se accompagnate da adeguate misure di supporto. Il costo umano a breve termine è giustificato dalla protezione a lungo termine. Esprimo approvazione condizionata.",
+          verdetto: "APPROVE",
+        },
+        casper: {
+          sintesi: "Qualcosa in questo piano mi disturba a un livello che non riesco a formalizzare. I numeri possono dire quello che vogliono — la mia risposta è no. Alcune soglie non dovrebbero essere attraversate nemmeno con le migliori intenzioni.",
+          verdetto: "REJECT",
+        },
+        moderator: {
+          stato: "MAJORITY",
+          verdetto_finale: "Maggioranza 2/3 favorevole all'adozione del progetto. La dissidenza di Casper-3 segnala una riserva soggettiva non formalizzabile che si raccomanda di tenere in considerazione.",
+          nota: "Casper-3 ha espresso dissenso istintivo. Si consiglia revisione umana prima dell'esecuzione finale.",
+        },
+      };
+      setLiveUnits({ melchior: testResponse.melchior, balthasar: testResponse.balthasar, casper: testResponse.casper });
+      setMessages((prev) => [...prev, { role: "magi", content: testResponse, timestamp: new Date() }]);
+      setLoading(false);
+      return;
+    }
+
     const payload = { query, provider: settings.provider, apiKey: getApiKey() || undefined };
 
     try {
