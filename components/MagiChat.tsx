@@ -149,7 +149,7 @@ export default function MagiChat() {
   const providerMeta = PROVIDER_LABEL[settings.provider];
 
   return (
-    <div className="flex flex-col h-[100dvh]" style={{ background: "#0a0a0a", color: "#E0E0D0" }}>
+    <div className="flex flex-col h-[100dvh] overflow-hidden" style={{ background: "#0a0a0a", color: "#E0E0D0" }}>
       {/* Header */}
       <div
         className="border-b px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between shrink-0 gap-2"
