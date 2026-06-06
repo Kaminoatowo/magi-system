@@ -16,7 +16,7 @@ export default function RootLayout({
     <html lang="it">
       <body className="antialiased flex flex-col" style={{ height: "100dvh" }}>
         <Nav />
-        <main className="flex-1 min-h-0 overflow-hidden">
+        <main className="flex-1 min-h-0">
           {children}
         </main>
       </body>
