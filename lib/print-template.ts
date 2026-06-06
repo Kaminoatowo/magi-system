@@ -337,48 +337,82 @@ export function buildPrintHtml(data: MagiFullResponse): string {
   }
 
   @media print {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+
     .scanlines { display: none; }
-    body { background: white; padding: 0; }
+    body { background: white !important; padding: 0; }
     .sheet-outer { filter: none; width: 100%; }
     .sheet {
-      background: white;
+      background: white !important;
       background-image:
         linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+        linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px) !important;
       background-size: 32px 32px;
-      color: #111;
-      border: 1px solid #bbb;
+      border: 1px solid #bbb !important;
       width: 100%;
       padding: 1.2cm 1.6cm;
       clip-path: none;
     }
     .sheet::before { display: none; }
     .corner { display: none; }
-    :root {
-      --border: rgba(0,0,0,0.15);
-      --border-bright: rgba(0,0,0,0.35);
-      --ink: #222;
-      --ink-dim: #666;
-      --ink-bright: #000;
-      --m-color: #1055bb;
-      --b-color: #0a7a45;
-      --c-color: #956010;
-      --m-glow: rgba(16,85,187,0.06);
-      --b-glow: rgba(10,122,69,0.06);
-      --c-glow: rgba(149,96,16,0.06);
-      --consensus: #0a7a45;
-      --majority: #1055bb;
-      --deadlock: #bb1010;
-      --approve: #0a7a45;
-      --caution: #956010;
-      --reject: #bb1010;
-    }
-    .unit-m::before, .unit-b::before, .unit-c::before { box-shadow: none; }
-    .badge-approve::before, .badge-reject::before, .badge-caution::before { box-shadow: none; }
-    .unit-bar { box-shadow: none !important; }
-    .verdict-stato { text-shadow: none !important; }
-    .verdict-outer { clip-path: none; border: 1px solid rgba(0,0,0,0.3); }
-    .hdr-title { text-shadow: none; }
+
+    /* ── Explicit color overrides (CSS vars don't reliably update in @media print) ── */
+
+    /* Text content */
+    .unit-right        { color: #1a1a1a !important; }
+    .query-box         { color: #1a1a1a !important; background: #f9f9f9 !important; border-color: #ccc !important; }
+    .verdict-text      { color: #1a1a1a !important; }
+    .verdict-nota      { color: #555 !important; border-top-color: #ddd !important; }
+    .verdict-score     { color: #555 !important; }
+    .hdr-eyebrow       { color: #888 !important; }
+    .hdr-sub           { color: #888 !important; }
+    .meta-row          { color: #888 !important; }
+    .section-label     { color: #888 !important; }
+    .footer            { color: #888 !important; }
+    .unit-role         { color: #888 !important; }
+    .hdr-title         { color: #111 !important; text-shadow: none !important; }
+
+    /* Unit backgrounds */
+    .unit              { background: #fff !important; border-color: #ddd !important; }
+    .unit-left         { background: transparent !important; border-right-color: #ddd !important; }
+    .unit-m .unit-left { background: rgba(16,85,187,0.04) !important; }
+    .unit-b .unit-left { background: rgba(10,122,69,0.04)  !important; }
+    .unit-c .unit-left { background: rgba(149,96,16,0.04)  !important; }
+
+    /* Unit accent colors (IDs + left borders) */
+    .unit-m .unit-id   { color: #1055bb !important; }
+    .unit-b .unit-id   { color: #0a7a45 !important; }
+    .unit-c .unit-id   { color: #956010 !important; }
+    .unit-m::before    { background: #1055bb !important; box-shadow: none !important; }
+    .unit-b::before    { background: #0a7a45 !important; box-shadow: none !important; }
+    .unit-c::before    { background: #956010 !important; box-shadow: none !important; }
+
+    /* Verdict badges */
+    .badge-approve { color: #0a7a45 !important; border-color: #0a7a45 !important; background: rgba(10,122,69,0.06) !important; }
+    .badge-reject  { color: #bb1010 !important; border-color: #bb1010 !important; background: rgba(187,16,16,0.06) !important; }
+    .badge-caution { color: #956010 !important; border-color: #956010 !important; background: rgba(149,96,16,0.06) !important; }
+    .badge-approve::before { background: #0a7a45 !important; box-shadow: none !important; }
+    .badge-reject::before  { background: #bb1010 !important; box-shadow: none !important; }
+    .badge-caution::before { background: #956010 !important; box-shadow: none !important; }
+
+    /* Verdict stato */
+    .stato-consensus { color: #0a7a45 !important; text-shadow: none !important; }
+    .stato-majority  { color: #1055bb !important; text-shadow: none !important; }
+    .stato-deadlock  { color: #bb1010 !important; text-shadow: none !important; }
+    .verdict-outer   { clip-path: none !important; border: 1px solid #bbb !important; background: #f9f9f9 !important; }
+    .verdict-divider { background: #ddd !important; }
+
+    /* Misc */
+    .unit-bar        { box-shadow: none !important; }
+    .bar-m           { background: #1055bb !important; }
+    .bar-b           { background: #0a7a45 !important; }
+    .bar-c           { background: #956010 !important; }
+    .hdr-divider-line      { background: #ddd !important; }
+    .hdr-divider-diamond   { border-color: #bbb !important; }
+    .section-label::after  { background: #ddd !important; }
+    .meta-dot              { background: #0a7a45 !important; box-shadow: none !important; }
+    .query-box::before     { opacity: 1 !important; }
   }
 </style>
 </head>
