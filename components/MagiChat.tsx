@@ -54,6 +54,7 @@ export default function MagiChat() {
   const [settings, setSettings] = useState<MagiSettings>(DEFAULT_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
   const [freeRemaining, setFreeRemaining] = useState<number | null>(null);
+  const [isFreeTierLimited, setIsFreeTierLimited] = useState(false);
   const [liveUnits, setLiveUnits] = useState<{
     melchior: UnitResponse | null;
     balthasar: UnitResponse | null;
@@ -93,12 +94,19 @@ export default function MagiChat() {
     const key = settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey;
     if (key) {
       setFreeRemaining(null);
+      setIsFreeTierLimited(false);
       return;
     }
     fetch("/api/quota")
       .then((r) => r.json())
-      .then((d) => setFreeRemaining(d.remaining ?? null))
-      .catch(() => setFreeRemaining(null));
+      .then((d) => {
+        setFreeRemaining(d.remaining ?? null);
+        setIsFreeTierLimited(d.limited ?? false);
+      })
+      .catch(() => {
+        setFreeRemaining(null);
+        setIsFreeTierLimited(false);
+      });
   }, [settings.anthropicKey, settings.openaiKey, settings.provider]);
 
   useEffect(() => {
@@ -400,7 +408,7 @@ export default function MagiChat() {
       </div>
 
       {/* Free tier remaining badge */}
-      {freeRemaining !== null && freeRemaining < 999 && (
+      {isFreeTierLimited && freeRemaining !== null && (
         <div
           className="shrink-0 px-3 sm:px-6 py-1 flex items-center justify-end gap-1.5 border-t font-mono"
           style={{ borderColor: "#2a2a2a", background: "#0d0d0d" }}
