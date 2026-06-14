@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLanguage } from "@/lib/language-context";
 
 const LINKS = [
   { href: "/", label: "CHAT" },
@@ -11,6 +12,7 @@ const LINKS = [
 
 export default function Nav() {
   const pathname = usePathname();
+  const { toggle, t } = useLanguage();
 
   return (
     <nav
@@ -34,6 +36,25 @@ export default function Nav() {
           </Link>
         );
       })}
+
+      <div className="ml-auto">
+        <button
+          onClick={toggle}
+          className="text-xs font-mono font-bold tracking-widest px-2 py-1 rounded border transition-colors"
+          style={{ borderColor: "#2a2a2a", color: "#4a4a4a", background: "transparent" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "#3B8BEB50";
+            e.currentTarget.style.color = "#E0E0D0";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "#2a2a2a";
+            e.currentTarget.style.color = "#4a4a4a";
+          }}
+          aria-label="Toggle language"
+        >
+          {t.nav.langToggle}
+        </button>
+      </div>
     </nav>
   );
 }

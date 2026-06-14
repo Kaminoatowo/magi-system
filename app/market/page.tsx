@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MAGI_TRIPLETS, COLOR_MAP, DOMAIN_LABEL } from "@/lib/triplets";
 import { MagiSettings } from "@/lib/types";
+import { useLanguage } from "@/lib/language-context";
 
 const DEFAULT_ACTIVE = "evangelion-classic";
 
@@ -34,6 +35,7 @@ const DOMAIN_COLOR: Record<string, string> = {
 
 export default function MarketPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [activeId, setActiveIdState] = useState(DEFAULT_ACTIVE);
 
   useEffect(() => {
@@ -52,7 +54,7 @@ export default function MarketPage() {
         {/* Page header */}
         <div className="space-y-1">
           <h1 className="text-sm font-bold tracking-widest text-gray-200">MARKET</h1>
-          <p className="text-xs text-gray-600">Seleziona la configurazione di sistema da attivare.</p>
+          <p className="text-xs text-gray-600">{t.market.subtitle}</p>
         </div>
 
         {/* Triplet grid */}
@@ -87,7 +89,7 @@ export default function MarketPage() {
                     </span>
                     {isActive && (
                       <span className="text-xs font-bold tracking-widest" style={{ color: "#3B8BEB" }}>
-                        ● ATTIVO
+                        {t.market.active}
                       </span>
                     )}
                   </div>
@@ -136,7 +138,7 @@ export default function MarketPage() {
                     }
                   }}
                 >
-                  {isActive ? "● SISTEMA ATTIVO" : "ATTIVA SISTEMA"}
+                  {isActive ? t.market.systemActive : t.market.activate}
                 </button>
               </div>
             );

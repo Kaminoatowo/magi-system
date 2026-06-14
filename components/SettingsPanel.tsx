@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { MagiSettings, MagiProvider } from "@/lib/types";
+import { useLanguage } from "@/lib/language-context";
 
 interface SettingsPanelProps {
   settings: MagiSettings;
@@ -18,6 +19,7 @@ const PROVIDERS: { value: MagiProvider; label: string; model: string; color: str
 export default function SettingsPanel({ settings, onChange, onClose }: SettingsPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { t } = useLanguage();
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -153,7 +155,7 @@ export default function SettingsPanel({ settings, onChange, onClose }: SettingsP
           >
             <span>PERSONALIZZA</span>
             <span style={{ color: settings.triplet?.attiva ? "#3B8BEB" : "#3a3a3a" }}>
-              {settings.triplet?.attiva ? "● ATTIVA" : "○ INATTIVA"}
+              {settings.triplet?.attiva ? t.settings.active : t.settings.inactive}
             </span>
           </button>
           <button

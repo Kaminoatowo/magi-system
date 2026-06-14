@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { MagiSession } from "@/lib/types";
 import { DOMAIN_LABEL } from "@/lib/triplets";
 import { MAGI_TRIPLETS } from "@/lib/triplets";
+import { useLanguage } from "@/lib/language-context";
 
 const DOMAIN_COLOR: Record<string, string> = {
   general: "#3B8BEB",
@@ -13,23 +14,13 @@ const DOMAIN_COLOR: Record<string, string> = {
   daily: "#a78bfa",
 };
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString("it-IT", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 function truncate(text: string, max: number): string {
   return text.length > max ? text.slice(0, max) + "…" : text;
 }
 
 export default function ArchivePage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [sessions, setSessions] = useState<MagiSession[]>([]);
 
   useEffect(() => {
@@ -38,6 +29,17 @@ export default function ArchivePage() {
       if (raw) setSessions(JSON.parse(raw));
     } catch {}
   }, []);
+
+  function formatDate(iso: string): string {
+    const d = new Date(iso);
+    return d.toLocaleString(t.archive.dateLocale, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
 
   function reopen(session: MagiSession) {
     localStorage.setItem("magi-pending-session", JSON.stringify(session));
@@ -54,11 +56,7 @@ export default function ArchivePage() {
         {/* Page header */}
         <div className="space-y-1">
           <h1 className="text-sm font-bold tracking-widest text-gray-200">ARCHIVE</h1>
-          <p className="text-xs text-gray-600">
-            {sessions.length > 0
-              ? `${sessions.length} session${sessions.length === 1 ? "e" : "i"} registrat${sessions.length === 1 ? "a" : "e"}.`
-              : "Nessuna sessione registrata."}
-          </p>
+          <p className="text-xs text-gray-600">{t.archive.subtitle(sessions.length)}</p>
         </div>
 
         {sessions.length === 0 && (
@@ -67,9 +65,7 @@ export default function ArchivePage() {
             style={{ borderColor: "#2a2a2a", background: "#111111" }}
           >
             <div className="text-2xl tracking-widest text-gray-700 mb-3">⬡</div>
-            <div className="text-xs text-gray-600">
-              Le sessioni appariranno qui dopo la prima query.
-            </div>
+            <div className="text-xs text-gray-600">{t.archive.empty}</div>
           </div>
         )}
 
@@ -129,7 +125,7 @@ export default function ArchivePage() {
                     e.currentTarget.style.color = "#9ca3af";
                   }}
                 >
-                  RIAPRI
+                  {t.archive.reopen}
                 </button>
               </div>
             );

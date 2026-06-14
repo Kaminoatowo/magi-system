@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("Balthasar error:", err);
     return NextResponse.json(
-      { sintesi: err instanceof Error ? err.message : "Errore di sistema nell'unità Balthasar.", verdetto: "CAUTION" } as UnitResponse,
+      { sintesi: err instanceof Error ? err.message : "System error in Balthasar unit.", verdetto: "CAUTION" } as UnitResponse,
       { status: 500 }
     );
   }

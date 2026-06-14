@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChatMessage, MagiFullResponse, UnitResponse, ModeratorResponse, MagiSettings, MagiSession } from "@/lib/types";
 import { buildCustomPrompt } from "@/lib/prompts";
 import { MAGI_TRIPLETS, COLOR_MAP } from "@/lib/triplets";
+import { useLanguage } from "@/lib/language-context";
 import NodePanel from "./NodePanel";
 import MagiReport from "./MagiReport";
 import SettingsPanel from "./SettingsPanel";
@@ -46,6 +47,7 @@ const PROVIDER_LABEL: Record<string, { label: string; color: string }> = {
 };
 
 export default function MagiChat() {
+  const { t } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -117,7 +119,7 @@ export default function MagiChat() {
         tripletId: settings.activeTripletId,
         tripletName:
           settings.activeTripletId === "custom"
-            ? settings.triplet?.melchior?.nome || "Personalizzata"
+            ? settings.triplet?.melchior?.nome || t.custom.fallbackName
             : activeTriplet.name,
         startedAt: msgs[0]?.timestamp?.toISOString() ?? new Date().toISOString(),
         queries: userMessages.length,
@@ -247,7 +249,7 @@ export default function MagiChat() {
             className="hidden sm:inline-flex items-center gap-1 text-xs tracking-widest transition-colors hover:text-gray-300 truncate"
             style={{ color: "#4a4a4a" }}
           >
-            ⬡ {activeTriplet?.name ?? (settings.triplet?.melchior?.nome || "Personalizzata")}
+            ⬡ {activeTriplet?.name ?? (settings.triplet?.melchior?.nome || t.custom.fallbackName)}
           </Link>
         </div>
         <div className="flex items-center gap-2 shrink-0">
