@@ -50,11 +50,11 @@ export default function SettingsPanel({ settings, onChange, onClose }: SettingsP
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 sm:py-4 border-b" style={{ borderColor: "#2a2a2a" }}>
-          <span className="text-xs font-bold tracking-widest text-gray-300">⚙ CONFIGURAZIONE SISTEMA</span>
+          <span className="text-xs font-bold tracking-widest text-gray-300">⚙ SYSTEM CONFIGURATION</span>
           <button
             onClick={onClose}
             className="text-gray-600 hover:text-gray-300 text-lg leading-none transition-colors p-1"
-            aria-label="Chiudi"
+            aria-label="Close"
           >
             ✕
           </button>
@@ -95,9 +95,9 @@ export default function SettingsPanel({ settings, onChange, onClose }: SettingsP
 
           {/* API keys */}
           <div className="space-y-4">
-            <label className="text-xs tracking-widest text-gray-500 block">CHIAVI API</label>
+            <label className="text-xs tracking-widest text-gray-500 block">API KEYS</label>
             <p className="text-xs text-gray-600 leading-relaxed">
-              Opzionale — se vuote usa le variabili d&apos;ambiente del server.
+              Optional — if empty, uses server environment variables.
             </p>
 
             {[
@@ -123,13 +123,13 @@ export default function SettingsPanel({ settings, onChange, onClose }: SettingsP
 
           {/* Status */}
           <div className="rounded border px-4 py-3 space-y-1.5" style={{ borderColor: "#2a2a2a", background: "#111111" }}>
-            <div className="text-xs tracking-widest text-gray-500 mb-2">STATO CORRENTE</div>
+            <div className="text-xs tracking-widest text-gray-500 mb-2">CURRENT STATUS</div>
             {[
               { label: "Provider", value: activeProvider.label, color: activeProvider.color },
-              { label: "Modello", value: activeProvider.model, color: "#9ca3af" },
+              { label: "Model", value: activeProvider.model, color: "#9ca3af" },
               {
-                label: "Chiave",
-                value: (settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey) ? "● PERSONALIZZATA" : "● ENV SERVER",
+                label: "Key",
+                value: (settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey) ? "● CUSTOM" : "● ENV SERVER",
                 color: "#9ca3af",
               },
             ].map(({ label, value, color }) => (
@@ -147,7 +147,7 @@ export default function SettingsPanel({ settings, onChange, onClose }: SettingsP
             className="w-full py-2.5 rounded border text-xs font-bold tracking-widest transition-all"
             style={{ borderColor: activeProvider.color, color: activeProvider.color }}
           >
-            CONFERMA
+            CONFIRM
           </button>
         </div>
       </div>
