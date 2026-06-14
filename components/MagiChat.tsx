@@ -400,7 +400,7 @@ export default function MagiChat() {
       </div>
 
       {/* Free tier remaining badge */}
-      {freeRemaining !== null && freeRemaining < 3 && (
+      {freeRemaining !== null && freeRemaining < 999 && (
         <div
           className="shrink-0 px-3 sm:px-6 py-1 flex items-center justify-end gap-1.5 border-t font-mono"
           style={{ borderColor: "#2a2a2a", background: "#0d0d0d" }}

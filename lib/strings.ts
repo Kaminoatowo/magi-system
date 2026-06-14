@@ -70,7 +70,7 @@ const EN = {
     unitSubs: ["SCIENTIST", "MOTHER", "WOMAN"] as [string, string, string],
     quotaExceeded: "Free request limit reached.",
     quotaAddKey: "Add your API key in ⚙ CONFIG to continue.",
-    freeRemaining: (n: number) => `${n} free request${n === 1 ? "" : "s"} remaining`,
+    freeRemaining: (n: number) => `FREE — ${n} / 3`,
   },
   nodePanel: {
     processing: "PROCESSING...",
@@ -163,7 +163,7 @@ const IT: typeof EN = {
     unitSubs: ["SCIENZIATA", "MADRE", "DONNA"] as [string, string, string],
     quotaExceeded: "Limite di richieste gratuite raggiunto.",
     quotaAddKey: "Aggiungi la tua API key in ⚙ CONFIG per continuare.",
-    freeRemaining: (n: number) => `${n} richiesta${n === 1 ? "" : " gratuite"} rimanent${n === 1 ? "e" : "i"}`,
+    freeRemaining: (n: number) => `GRATUITO — ${n} / 3`,
   },
   nodePanel: {
     processing: "ELABORAZIONE...",
