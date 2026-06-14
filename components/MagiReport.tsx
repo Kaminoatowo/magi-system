@@ -15,9 +15,9 @@ const statoColor: Record<MagiStato, string> = {
 };
 
 const statoLabel: Record<MagiStato, string> = {
-  CONSENSUS: "██ CONSENSUS RAGGIUNTO",
-  MAJORITY: "▓▓ MAGGIORANZA 2/3",
-  DEADLOCK: "░░ DEADLOCK — RINVIO UMANO",
+  CONSENSUS: "██ CONSENSUS REACHED",
+  MAJORITY: "▓▓ MAJORITY 2/3",
+  DEADLOCK: "░░ DEADLOCK — HUMAN REFERRAL",
 };
 
 const verdictColor: Record<MagiVerdict, string> = {
@@ -56,9 +56,9 @@ export default function MagiReport({ data }: MagiReportProps) {
   }, [data]);
 
   const units = [
-    { key: "melchior", label: "MELCHIOR-1", sub: "SCIENZIATA", resp: data.melchior },
-    { key: "balthasar", label: "BALTHASAR-2", sub: "MADRE", resp: data.balthasar },
-    { key: "casper", label: "CASPER-3", sub: "DONNA", resp: data.casper },
+    { key: "melchior", label: "MELCHIOR-1", sub: "SCIENTIST", resp: data.melchior },
+    { key: "balthasar", label: "BALTHASAR-2", sub: "MOTHER", resp: data.balthasar },
+    { key: "casper", label: "CASPER-3", sub: "WOMAN", resp: data.casper },
   ] as const;
 
   function handlePrint() {
@@ -82,7 +82,7 @@ export default function MagiReport({ data }: MagiReportProps) {
         className="px-3 sm:px-4 py-2 border-b text-center tracking-widest text-gray-500"
         style={{ borderColor: "#2a2a2a" }}
       >
-        S I S T E M A &nbsp; M A G I &nbsp; — &nbsp; R E P O R T
+        M A G I &nbsp; S Y S T E M &nbsp; — &nbsp; R E P O R T
       </div>
 
       {/* Query */}
@@ -125,16 +125,16 @@ export default function MagiReport({ data }: MagiReportProps) {
         style={{ borderColor: "#2a2a2a", background: `${color}08` }}
       >
         <div className="flex flex-wrap gap-x-3 gap-y-1">
-          <span className="text-gray-600">STATO:</span>
+          <span className="text-gray-600">STATUS:</span>
           <span className={`font-bold tracking-widest print-stato`} style={{ color }}>{stato}</span>
         </div>
         <div>
-          <span className="text-gray-600">VERDETTO: </span>
+          <span className="text-gray-600">VERDICT: </span>
           <span className={`break-words print-stato`} style={{ color }}>{data.moderator.verdetto_finale}</span>
         </div>
         {data.moderator.nota && (
           <div>
-            <span className="text-gray-600">NOTA: </span>
+            <span className="text-gray-600">NOTE: </span>
             <span className="text-gray-400 break-words">{data.moderator.nota}</span>
           </div>
         )}
@@ -160,9 +160,9 @@ export default function MagiReport({ data }: MagiReportProps) {
             (e.currentTarget).style.borderColor = "#2a2a2a";
             (e.currentTarget).style.color = "#6b7280";
           }}
-          aria-label="Stampa report"
+          aria-label="Print report"
         >
-          ⎙ STAMPA
+          ⎙ PRINT
         </button>
       </div>
     </div>

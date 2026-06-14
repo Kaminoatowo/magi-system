@@ -65,7 +65,7 @@ export default function NodePanel({ name, subtitle, accent, data, loading }: Nod
         {loading && (
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <span style={{ color: accent }}>▋</span>
-            <span className="animate-pulse hidden sm:inline">ELABORAZIONE IN CORSO...</span>
+            <span className="animate-pulse hidden sm:inline">PROCESSING...</span>
             <span className="animate-pulse sm:hidden">...</span>
           </div>
         )}
@@ -75,7 +75,7 @@ export default function NodePanel({ name, subtitle, accent, data, loading }: Nod
           </p>
         )}
         {!loading && !data && (
-          <p className="text-xs text-gray-600 italic hidden sm:block">IN ATTESA DI INPUT</p>
+          <p className="text-xs text-gray-600 italic hidden sm:block">AWAITING INPUT</p>
         )}
 
         {/* Verdict inline on mobile, below on desktop */}

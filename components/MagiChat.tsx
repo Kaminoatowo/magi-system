@@ -144,23 +144,23 @@ export default function MagiChat() {
     // Test mode
     if (query === "/test") {
       const testResponse: MagiFullResponse = {
-        query: "[TEST] Valutare l'adozione del Progetto E su scala globale.",
+        query: "[TEST] Evaluate the global adoption of Project E.",
         melchior: {
-          sintesi: "L'analisi statistica dei dati disponibili indica una probabilità del 73% di successo operativo. Le variabili di rischio rientrano nei parametri accettabili. Raccomando l'approvazione con monitoraggio continuo degli indicatori chiave.",
+          sintesi: "Statistical analysis of available data indicates a 73% probability of operational success. Risk variables fall within acceptable parameters. I recommend approval with continuous monitoring of key indicators.",
           verdetto: "APPROVE",
         },
         balthasar: {
-          sintesi: "Le implicazioni sul benessere delle popolazioni coinvolte sono significative ma gestibili se accompagnate da adeguate misure di supporto. Il costo umano a breve termine è giustificato dalla protezione a lungo termine. Esprimo approvazione condizionata.",
+          sintesi: "The implications for the well-being of affected populations are significant but manageable if accompanied by adequate support measures. The short-term human cost is justified by long-term protection. I express conditional approval.",
           verdetto: "APPROVE",
         },
         casper: {
-          sintesi: "Qualcosa in questo piano mi disturba a un livello che non riesco a formalizzare. I numeri possono dire quello che vogliono — la mia risposta è no. Alcune soglie non dovrebbero essere attraversate nemmeno con le migliori intenzioni.",
+          sintesi: "Something about this plan disturbs me at a level I cannot formalize. The numbers can say whatever they want — my answer is no. Some thresholds should not be crossed even with the best intentions.",
           verdetto: "REJECT",
         },
         moderator: {
           stato: "MAJORITY",
-          verdetto_finale: "Maggioranza 2/3 favorevole all'adozione del progetto. La dissidenza di Casper-3 segnala una riserva soggettiva non formalizzabile che si raccomanda di tenere in considerazione.",
-          nota: "Casper-3 ha espresso dissenso istintivo. Si consiglia revisione umana prima dell'esecuzione finale.",
+          verdetto_finale: "2/3 majority in favor of project adoption. Casper-3's dissent signals a subjective reservation that cannot be formalized — it is recommended to take this into account.",
+          nota: "Casper-3 expressed instinctive dissent. Human review is advised before final execution.",
         },
       };
       const magiMsg: ChatMessage = { role: "magi", content: testResponse, timestamp: new Date() };
@@ -208,7 +208,7 @@ export default function MagiChat() {
       console.error(err);
       setMessages((prev) => [
         ...prev,
-        { role: "magi", content: "ERRORE DI SISTEMA — connessione alle unità MAGI interrotta.", timestamp: new Date() },
+        { role: "magi", content: "SYSTEM ERROR — connection to MAGI units lost.", timestamp: new Date() },
       ]);
     } finally {
       setLoading(false);
@@ -261,7 +261,7 @@ export default function MagiChat() {
             onClick={() => setShowSettings(true)}
             className="text-gray-600 hover:text-gray-300 text-xs font-mono tracking-widest transition-colors border rounded px-2 py-1"
             style={{ borderColor: "#2a2a2a" }}
-            aria-label="Impostazioni"
+            aria-label="Settings"
           >
             <span className="hidden sm:inline">⚙ CONFIG</span>
             <span className="sm:hidden">⚙</span>
@@ -280,7 +280,7 @@ export default function MagiChat() {
             ? settings.triplet[key]
             : null;
           const name = unit?.name ?? customUnit?.nome?.trim() ?? ["MELCHIOR-1", "BALTHASAR-2", "CASPER-3"][i];
-          const subtitle = unit?.role ?? customUnit?.ambito?.trim() ?? ["SCIENZIATA", "MADRE", "DONNA"][i];
+          const subtitle = unit?.role ?? customUnit?.ambito?.trim() ?? ["SCIENTIST", "MOTHER", "WOMAN"][i];
           const accent = unit ? COLOR_MAP[unit.color] : ["#3B8BEB", "#1DB87E", "#E89020"][i];
           return (
             <NodePanel
@@ -300,8 +300,8 @@ export default function MagiChat() {
         {messages.length === 0 && (
           <div className="text-center text-gray-600 text-xs mt-8 sm:mt-12 space-y-2">
             <div className="text-xl sm:text-2xl tracking-widest">⬡ MAGI ⬡</div>
-            <div>SISTEMA OPERATIVO — IN ATTESA DI INPUT</div>
-            <div className="text-gray-700 text-xs px-4">Inserisci una query per avviare il processo deliberativo</div>
+            <div>OPERATING SYSTEM — AWAITING INPUT</div>
+            <div className="text-gray-700 text-xs px-4">Enter a query to start the deliberative process</div>
           </div>
         )}
 
@@ -312,7 +312,7 @@ export default function MagiChat() {
                 className="max-w-[85%] sm:max-w-2xl rounded px-3 sm:px-4 py-2 text-sm break-words"
                 style={{ background: "#1a1a2e", border: "1px solid #3B8BEB30", color: "#E0E0D0" }}
               >
-                <span className="text-xs text-blue-500 block mb-1">OPERATORE</span>
+                <span className="text-xs text-blue-500 block mb-1">OPERATOR</span>
                 {msg.content as string}
               </div>
             ) : typeof msg.content === "string" ? (
@@ -334,8 +334,8 @@ export default function MagiChat() {
           <div className="flex justify-start">
             <div className="text-xs font-mono text-gray-500 flex items-center gap-2">
               <span className="text-green-400 animate-pulse">▋</span>
-              <span className="hidden sm:inline">UNITÀ IN DELIBERAZIONE — attendere sintesi...</span>
-              <span className="sm:hidden">DELIBERAZIONE IN CORSO...</span>
+              <span className="hidden sm:inline">UNITS IN DELIBERATION — awaiting synthesis...</span>
+              <span className="sm:hidden">DELIBERATION IN PROGRESS...</span>
             </div>
           </div>
         )}
@@ -356,7 +356,7 @@ export default function MagiChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
-            placeholder="Inserisci query..."
+            placeholder="Enter query..."
             className="flex-1 bg-transparent border-b font-mono text-sm outline-none placeholder-gray-700 transition-colors min-w-0"
             style={{ borderColor: loading ? "#2a2a2a" : "#3B8BEB60", color: "#E0E0D0" }}
           />
@@ -370,7 +370,7 @@ export default function MagiChat() {
             }}
             onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = "transparent"; }}
           >
-            INVIA
+            SEND
           </button>
         </div>
       </form>
