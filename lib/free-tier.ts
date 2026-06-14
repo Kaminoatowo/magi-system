@@ -1,4 +1,3 @@
-import { kv } from "@vercel/kv";
 import { MagiProvider } from "./types";
 
 export const FREE_TIER_LIMIT = 3;
@@ -26,11 +25,17 @@ export function getClientIp(headers: Headers): string {
   );
 }
 
+/** Returns true if KV is available (env vars are set). */
+export function isKvConfigured(): boolean {
+  return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+}
+
 const kvKey = (ip: string) => `quota:${ip}`;
 
-/** Returns the number of free queries already used by this IP. Returns 0 if KV is not configured. */
+/** Returns the number of free queries already used by this IP. Returns 0 on any error. */
 export async function getQuotaUsed(ip: string): Promise<number> {
   try {
+    const { kv } = await import("@vercel/kv");
     const val = await kv.get<number>(kvKey(ip));
     return val ?? 0;
   } catch {
@@ -38,16 +43,12 @@ export async function getQuotaUsed(ip: string): Promise<number> {
   }
 }
 
-/** Increments the quota counter for this IP. No-ops if KV is not configured. */
+/** Increments the quota counter for this IP. Returns 0 on any error. */
 export async function incrementQuota(ip: string): Promise<number> {
   try {
+    const { kv } = await import("@vercel/kv");
     return await kv.incr(kvKey(ip));
   } catch {
     return 0;
   }
-}
-
-/** Returns true if KV is available (env vars are set). */
-export function isKvConfigured(): boolean {
-  return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 }
