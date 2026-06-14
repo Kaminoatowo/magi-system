@@ -58,6 +58,34 @@ const EN = {
     active: "● ACTIVE",
     inactive: "○ INACTIVE",
   },
+  chat: {
+    awaitingTitle: "OPERATING SYSTEM — AWAITING INPUT",
+    awaitingSubtitle: "Enter a query to start the deliberative process",
+    operator: "OPERATOR",
+    deliberating: "UNITS IN DELIBERATION — awaiting synthesis...",
+    deliberatingShort: "DELIBERATION IN PROGRESS...",
+    placeholder: "Enter query...",
+    send: "SEND",
+    systemError: "SYSTEM ERROR — connection to MAGI units lost.",
+    unitSubs: ["SCIENTIST", "MOTHER", "WOMAN"] as [string, string, string],
+  },
+  nodePanel: {
+    processing: "PROCESSING...",
+    awaiting: "AWAITING INPUT",
+  },
+  report: {
+    query: "QUERY",
+    status: "STATUS",
+    verdict: "VERDICT",
+    note: "NOTE",
+    print: "⎙ PRINT",
+    unitSubs: { melchior: "SCIENTIST", balthasar: "MOTHER", casper: "WOMAN" } as Record<string, string>,
+    stato: {
+      CONSENSUS: "██ CONSENSUS REACHED",
+      MAJORITY: "▓▓ MAJORITY 2/3",
+      DEADLOCK: "░░ DEADLOCK — HUMAN REFERRAL",
+    } as Record<string, string>,
+  },
 };
 
 const IT: typeof EN = {
@@ -119,6 +147,34 @@ const IT: typeof EN = {
   settings: {
     active: "● ATTIVA",
     inactive: "○ INATTIVA",
+  },
+  chat: {
+    awaitingTitle: "SISTEMA OPERATIVO — IN ATTESA DI INPUT",
+    awaitingSubtitle: "Inserisci una query per avviare il processo deliberativo",
+    operator: "OPERATORE",
+    deliberating: "UNITÀ IN DELIBERAZIONE — in attesa di sintesi...",
+    deliberatingShort: "DELIBERAZIONE IN CORSO...",
+    placeholder: "Inserisci query...",
+    send: "INVIA",
+    systemError: "ERRORE DI SISTEMA — connessione alle unità MAGI persa.",
+    unitSubs: ["SCIENZIATA", "MADRE", "DONNA"] as [string, string, string],
+  },
+  nodePanel: {
+    processing: "ELABORAZIONE...",
+    awaiting: "IN ATTESA DI INPUT",
+  },
+  report: {
+    query: "QUERY",
+    status: "STATO",
+    verdict: "VERDETTO",
+    note: "NOTA",
+    print: "⎙ STAMPA",
+    unitSubs: { melchior: "SCIENZIATA", balthasar: "MADRE", casper: "DONNA" } as Record<string, string>,
+    stato: {
+      CONSENSUS: "██ CONSENSO RAGGIUNTO",
+      MAJORITY: "▓▓ MAGGIORANZA 2/3",
+      DEADLOCK: "░░ STALLO — RINVIO UMANO",
+    } as Record<string, string>,
   },
 };
 
