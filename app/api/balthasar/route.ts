@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { BALTHASAR_PROMPT } from "@/lib/prompts";
 import { UnitResponse, MagiProvider } from "@/lib/types";
 import { callLLM } from "@/lib/ai-client";
+import { getFreeTierConfig } from "@/lib/free-tier";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +14,11 @@ export async function POST(req: NextRequest) {
     };
     if (!query) return NextResponse.json({ error: "Missing query" }, { status: 400 });
 
-    const text = await callLLM(customPrompt || BALTHASAR_PROMPT, query, provider, apiKey);
+    const freeTier = !apiKey ? getFreeTierConfig() : null;
+    const resolvedProvider = freeTier ? freeTier.provider : provider;
+    const resolvedModel = freeTier ? freeTier.model : undefined;
+
+    const text = await callLLM(customPrompt || BALTHASAR_PROMPT, query, resolvedProvider, apiKey, resolvedModel);
     const data: UnitResponse = JSON.parse(text);
     return NextResponse.json(data);
   } catch (err) {

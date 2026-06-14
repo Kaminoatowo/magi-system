@@ -53,6 +53,7 @@ export default function MagiChat() {
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState<MagiSettings>(DEFAULT_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
+  const [freeRemaining, setFreeRemaining] = useState<number | null>(null);
   const [liveUnits, setLiveUnits] = useState<{
     melchior: UnitResponse | null;
     balthasar: UnitResponse | null;
@@ -87,6 +88,18 @@ export default function MagiChat() {
   useEffect(() => {
     localStorage.setItem("magi-settings", JSON.stringify(settings));
   }, [settings]);
+
+  useEffect(() => {
+    const key = settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey;
+    if (key) {
+      setFreeRemaining(null);
+      return;
+    }
+    fetch("/api/quota")
+      .then((r) => r.json())
+      .then((d) => setFreeRemaining(d.remaining ?? null))
+      .catch(() => setFreeRemaining(null));
+  }, [settings.anthropicKey, settings.openaiKey, settings.provider]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -176,8 +189,19 @@ export default function MagiChat() {
       return;
     }
 
-    const basePayload = { query, provider: settings.provider, apiKey: getApiKey() || undefined };
+    const apiKey = getApiKey() || undefined;
+    const basePayload = { query, provider: settings.provider, apiKey };
     const prompts = resolvePrompts();
+
+    // Pre-check quota before wasting unit calls
+    if (!apiKey && freeRemaining !== null && freeRemaining <= 0) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "magi", content: "quota_exceeded", timestamp: new Date() },
+      ]);
+      setLoading(false);
+      return;
+    }
 
     try {
       const [melchior, balthasar, casper] = await Promise.all(
@@ -197,7 +221,20 @@ export default function MagiChat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...basePayload, melchior, balthasar, casper }),
       });
+
+      if (modRes.status === 429) {
+        setFreeRemaining(0);
+        setMessages((prev) => [
+          ...prev,
+          { role: "magi", content: "quota_exceeded", timestamp: new Date() },
+        ]);
+        setLoading(false);
+        return;
+      }
+
       const moderator: ModeratorResponse = await modRes.json();
+
+      if (!apiKey) setFreeRemaining((r) => (r !== null ? Math.max(0, r - 1) : null));
 
       const full: MagiFullResponse = { query, melchior, balthasar, casper, moderator };
       const magiMsg: ChatMessage = { role: "magi", content: full, timestamp: new Date() };
@@ -318,12 +355,29 @@ export default function MagiChat() {
                 {msg.content as string}
               </div>
             ) : typeof msg.content === "string" ? (
-              <div
-                className="max-w-[85%] sm:max-w-2xl rounded px-3 sm:px-4 py-2 text-xs break-words"
-                style={{ background: "#1a0a0a", border: "1px solid #E8902030", color: "#E89020" }}
-              >
-                ⚠ {msg.content}
-              </div>
+              msg.content === "quota_exceeded" ? (
+                <div
+                  className="max-w-[85%] sm:max-w-2xl rounded px-3 sm:px-4 py-3 text-xs break-words space-y-1"
+                  style={{ background: "#1a0a0a", border: "1px solid #E8902030", color: "#E89020" }}
+                >
+                  <div>⚠ {t.chat.quotaExceeded}</div>
+                  <div>
+                    <button
+                      onClick={() => setShowSettings(true)}
+                      className="underline underline-offset-2 hover:opacity-70 transition-opacity"
+                    >
+                      {t.chat.quotaAddKey}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="max-w-[85%] sm:max-w-2xl rounded px-3 sm:px-4 py-2 text-xs break-words"
+                  style={{ background: "#1a0a0a", border: "1px solid #E8902030", color: "#E89020" }}
+                >
+                  ⚠ {msg.content}
+                </div>
+              )
             ) : (
               <div className="w-full">
                 <MagiReport data={msg.content as MagiFullResponse} />
@@ -344,6 +398,28 @@ export default function MagiChat() {
 
         <div ref={bottomRef} />
       </div>
+
+      {/* Free tier remaining badge */}
+      {freeRemaining !== null && freeRemaining < 3 && (
+        <div
+          className="shrink-0 px-3 sm:px-6 py-1 flex items-center justify-end gap-1.5 border-t font-mono"
+          style={{ borderColor: "#2a2a2a", background: "#0d0d0d" }}
+        >
+          {freeRemaining > 0 ? (
+            <span className="text-xs tracking-widest" style={{ color: "#4a4a4a" }}>
+              {t.chat.freeRemaining(freeRemaining)}
+            </span>
+          ) : (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="text-xs tracking-widest underline underline-offset-2 hover:opacity-70 transition-opacity"
+              style={{ color: "#E89020" }}
+            >
+              {t.chat.quotaAddKey}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Input */}
       <form
