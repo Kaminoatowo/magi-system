@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Nav from "@/components/Nav";
+import { LanguageProvider } from "@/lib/language-context";
 
 export const metadata: Metadata = {
   title: "MAGI System — NERV Central Dogma",
-  description: "Sistema supercomputer MAGI — Melchior, Balthasar, Casper",
+  description: "MAGI supercomputer system — Melchior, Balthasar, Casper",
 };
 
 export default function RootLayout({
@@ -12,8 +14,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="it">
-      <body className="antialiased">{children}</body>
+    <html lang="en">
+      <body className="antialiased flex flex-col" style={{ height: "100dvh" }}>
+        <LanguageProvider>
+          <Nav />
+          <main className="flex-1 min-h-0">
+            {children}
+          </main>
+        </LanguageProvider>
+      </body>
     </html>
   );
 }

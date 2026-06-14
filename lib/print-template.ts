@@ -14,9 +14,9 @@ function timestamp() {
 }
 
 function statoScore(stato: MagiStato) {
-  if (stato === "CONSENSUS") return "3 / 3 unità · accordo raggiunto";
-  if (stato === "MAJORITY") return "2 / 3 unità · maggioranza";
-  return "0 / 3 unità · stallo";
+  if (stato === "CONSENSUS") return "3 / 3 units · agreement reached";
+  if (stato === "MAJORITY") return "2 / 3 units · majority";
+  return "0 / 3 units · stalemate";
 }
 
 function statoClass(stato: MagiStato) {
@@ -55,7 +55,7 @@ export function buildPrintHtml(data: MagiFullResponse): string {
     : "";
 
   return `<!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -424,23 +424,23 @@ export function buildPrintHtml(data: MagiFullResponse): string {
     <span><span class="meta-dot"></span>SYS ONLINE</span>
     <span>REF&nbsp;MAGI&#8209;${refNumber()}</span>
     <span>${timestamp()}</span>
-    <span>CLASSIFICAZIONE: INTERNO</span>
+    <span>CLASSIFICATION: INTERNAL</span>
   </div>
 
   <div class="section">
-    <div class="section-label">Query ricevuta</div>
+    <div class="section-label">Received Query</div>
     <div class="query-box">${escHtml(data.query)}</div>
   </div>
 
   <div class="section">
-    <div class="section-label">Responso unità cognitive</div>
+    <div class="section-label">Cognitive Unit Response</div>
     <div class="units">
 
       <div class="unit unit-m">
         <div class="unit-left">
           <div>
             <div class="unit-id">MELCHIOR&#8209;1</div>
-            <div class="unit-role">Scienziata</div>
+            <div class="unit-role">Scientist</div>
           </div>
           <div class="unit-badge badge-${data.melchior.verdetto.toLowerCase()}">${data.melchior.verdetto}</div>
         </div>
@@ -451,7 +451,7 @@ export function buildPrintHtml(data: MagiFullResponse): string {
         <div class="unit-left">
           <div>
             <div class="unit-id">BALTHASAR&#8209;2</div>
-            <div class="unit-role">Madre</div>
+            <div class="unit-role">Mother</div>
           </div>
           <div class="unit-badge badge-${data.balthasar.verdetto.toLowerCase()}">${data.balthasar.verdetto}</div>
         </div>
@@ -462,7 +462,7 @@ export function buildPrintHtml(data: MagiFullResponse): string {
         <div class="unit-left">
           <div>
             <div class="unit-id">CASPER&#8209;3</div>
-            <div class="unit-role">Donna</div>
+            <div class="unit-role">Woman</div>
           </div>
           <div class="unit-badge badge-${data.casper.verdetto.toLowerCase()}">${data.casper.verdetto}</div>
         </div>
@@ -473,7 +473,7 @@ export function buildPrintHtml(data: MagiFullResponse): string {
   </div>
 
   <div class="section">
-    <div class="section-label">Sintesi e verdetto</div>
+    <div class="section-label">Summary and Verdict</div>
     <div class="verdict-outer">
       <div class="verdict-header">
         <div class="verdict-stato ${statoClass(data.moderator.stato)}">${data.moderator.stato}</div>

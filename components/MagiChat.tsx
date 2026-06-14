@@ -1,21 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect, FormEvent } from "react";
-import { ChatMessage, MagiFullResponse, UnitResponse, ModeratorResponse, MagiSettings } from "@/lib/types";
+import { useState, useRef, useEffect, useCallback, FormEvent } from "react";
+import Link from "next/link";
+import { ChatMessage, MagiFullResponse, UnitResponse, ModeratorResponse, MagiSettings, MagiSession } from "@/lib/types";
+import { buildCustomPrompt } from "@/lib/prompts";
+import { MAGI_TRIPLETS, COLOR_MAP } from "@/lib/triplets";
+import { useLanguage } from "@/lib/language-context";
 import NodePanel from "./NodePanel";
 import MagiReport from "./MagiReport";
 import SettingsPanel from "./SettingsPanel";
 
-const UNITS = [
-  { key: "melchior" as const, name: "MELCHIOR-1", subtitle: "SCIENZIATA", accent: "#3B8BEB", endpoint: "/api/melchior" },
-  { key: "balthasar" as const, name: "BALTHASAR-2", subtitle: "MADRE", accent: "#1DB87E", endpoint: "/api/balthasar" },
-  { key: "casper" as const, name: "CASPER-3", subtitle: "DONNA", accent: "#E89020", endpoint: "/api/casper" },
-];
+const UNIT_ENDPOINTS = ["/api/melchior", "/api/balthasar", "/api/casper"];
+const UNIT_KEYS = ["melchior", "balthasar", "casper"] as const;
 
 const DEFAULT_SETTINGS: MagiSettings = {
   provider: "anthropic",
   anthropicKey: "",
   openaiKey: "",
+  activeTripletId: "evangelion-classic",
 };
 
 function loadSettings(): MagiSettings {
@@ -28,12 +30,24 @@ function loadSettings(): MagiSettings {
   }
 }
 
+function saveSession(session: MagiSession) {
+  try {
+    const raw = localStorage.getItem("magi-sessions");
+    const sessions: MagiSession[] = raw ? JSON.parse(raw) : [];
+    const idx = sessions.findIndex((s) => s.id === session.id);
+    if (idx >= 0) sessions[idx] = session;
+    else sessions.unshift(session);
+    localStorage.setItem("magi-sessions", JSON.stringify(sessions.slice(0, 50)));
+  } catch {}
+}
+
 const PROVIDER_LABEL: Record<string, { label: string; color: string }> = {
   anthropic: { label: "ANTHROPIC", color: "#E89020" },
   openai: { label: "OPENAI", color: "#1DB87E" },
 };
 
 export default function MagiChat() {
+  const { t } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -44,15 +58,78 @@ export default function MagiChat() {
     balthasar: UnitResponse | null;
     casper: UnitResponse | null;
   }>({ melchior: null, balthasar: null, casper: null });
+  const sessionIdRef = useRef<string>(
+    typeof crypto !== "undefined" ? crypto.randomUUID() : String(Date.now())
+  );
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setSettings(loadSettings()); }, []);
-  useEffect(() => { localStorage.setItem("magi-settings", JSON.stringify(settings)); }, [settings]);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    const loaded = loadSettings();
+    setSettings(loaded);
+
+    // Check for pending session to restore
+    const pending = localStorage.getItem("magi-pending-session");
+    if (pending) {
+      try {
+        const session: MagiSession = JSON.parse(pending);
+        const restored = session.messages.map((m) => ({
+          ...m,
+          timestamp: new Date(m.timestamp as unknown as string),
+        }));
+        setMessages(restored);
+        sessionIdRef.current = session.id;
+        setSettings((s) => ({ ...s, ...loaded, activeTripletId: session.tripletId }));
+        localStorage.removeItem("magi-pending-session");
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("magi-settings", JSON.stringify(settings));
+  }, [settings]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   function getApiKey() {
     return settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey;
   }
+
+  function resolvePrompts(): (string | undefined)[] {
+    if (settings.activeTripletId === "custom" && settings.triplet?.attiva) {
+      return [
+        buildCustomPrompt(settings.triplet.melchior),
+        buildCustomPrompt(settings.triplet.balthasar),
+        buildCustomPrompt(settings.triplet.casper),
+      ];
+    }
+    const triplet =
+      MAGI_TRIPLETS.find((t) => t.id === settings.activeTripletId) ?? MAGI_TRIPLETS[0];
+    return triplet.units.map((u) => u.systemPrompt);
+  }
+
+  const updateSession = useCallback(
+    (msgs: ChatMessage[], lastQuery: string) => {
+      const activeTriplet =
+        MAGI_TRIPLETS.find((t) => t.id === settings.activeTripletId) ?? MAGI_TRIPLETS[0];
+      const userMessages = msgs.filter((m) => m.role === "user");
+      const session: MagiSession = {
+        id: sessionIdRef.current,
+        tripletId: settings.activeTripletId,
+        tripletName:
+          settings.activeTripletId === "custom"
+            ? settings.triplet?.melchior?.nome || t.custom.fallbackName
+            : activeTriplet.name,
+        startedAt: msgs[0]?.timestamp?.toISOString() ?? new Date().toISOString(),
+        queries: userMessages.length,
+        lastQuery,
+        messages: msgs,
+      };
+      saveSession(session);
+    },
+    [settings]
+  );
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -62,45 +139,53 @@ export default function MagiChat() {
     setInput("");
     setLoading(true);
     setLiveUnits({ melchior: null, balthasar: null, casper: null });
-    setMessages((prev) => [...prev, { role: "user", content: query, timestamp: new Date() }]);
 
-    // Test mode: /test bypasses all LLM calls
-    if (query.trim() === "/test") {
+    const userMsg: ChatMessage = { role: "user", content: query, timestamp: new Date() };
+    setMessages((prev) => [...prev, userMsg]);
+
+    // Test mode
+    if (query === "/test") {
       const testResponse: MagiFullResponse = {
-        query: "[TEST] Valutare l'adozione del Progetto E su scala globale.",
+        query: "[TEST] Evaluate the global adoption of Project E.",
         melchior: {
-          sintesi: "L'analisi statistica dei dati disponibili indica una probabilità del 73% di successo operativo. Le variabili di rischio rientrano nei parametri accettabili. Raccomando l'approvazione con monitoraggio continuo degli indicatori chiave.",
+          sintesi: "Statistical analysis of available data indicates a 73% probability of operational success. Risk variables fall within acceptable parameters. I recommend approval with continuous monitoring of key indicators.",
           verdetto: "APPROVE",
         },
         balthasar: {
-          sintesi: "Le implicazioni sul benessere delle popolazioni coinvolte sono significative ma gestibili se accompagnate da adeguate misure di supporto. Il costo umano a breve termine è giustificato dalla protezione a lungo termine. Esprimo approvazione condizionata.",
+          sintesi: "The implications for the well-being of affected populations are significant but manageable if accompanied by adequate support measures. The short-term human cost is justified by long-term protection. I express conditional approval.",
           verdetto: "APPROVE",
         },
         casper: {
-          sintesi: "Qualcosa in questo piano mi disturba a un livello che non riesco a formalizzare. I numeri possono dire quello che vogliono — la mia risposta è no. Alcune soglie non dovrebbero essere attraversate nemmeno con le migliori intenzioni.",
+          sintesi: "Something about this plan disturbs me at a level I cannot formalize. The numbers can say whatever they want — my answer is no. Some thresholds should not be crossed even with the best intentions.",
           verdetto: "REJECT",
         },
         moderator: {
           stato: "MAJORITY",
-          verdetto_finale: "Maggioranza 2/3 favorevole all'adozione del progetto. La dissidenza di Casper-3 segnala una riserva soggettiva non formalizzabile che si raccomanda di tenere in considerazione.",
-          nota: "Casper-3 ha espresso dissenso istintivo. Si consiglia revisione umana prima dell'esecuzione finale.",
+          verdetto_finale: "2/3 majority in favor of project adoption. Casper-3's dissent signals a subjective reservation that cannot be formalized — it is recommended to take this into account.",
+          nota: "Casper-3 expressed instinctive dissent. Human review is advised before final execution.",
         },
       };
+      const magiMsg: ChatMessage = { role: "magi", content: testResponse, timestamp: new Date() };
       setLiveUnits({ melchior: testResponse.melchior, balthasar: testResponse.balthasar, casper: testResponse.casper });
-      setMessages((prev) => [...prev, { role: "magi", content: testResponse, timestamp: new Date() }]);
+      setMessages((prev) => {
+        const next = [...prev, magiMsg];
+        updateSession(next, query);
+        return next;
+      });
       setLoading(false);
       return;
     }
 
-    const payload = { query, provider: settings.provider, apiKey: getApiKey() || undefined };
+    const basePayload = { query, provider: settings.provider, apiKey: getApiKey() || undefined };
+    const prompts = resolvePrompts();
 
     try {
       const [melchior, balthasar, casper] = await Promise.all(
-        UNITS.map((unit) =>
-          fetch(unit.endpoint, {
+        UNIT_ENDPOINTS.map((endpoint, i) =>
+          fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ ...basePayload, customPrompt: prompts[i] }),
           }).then((r) => r.json() as Promise<UnitResponse>)
         )
       );
@@ -110,17 +195,22 @@ export default function MagiChat() {
       const modRes = await fetch("/api/moderator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, melchior, balthasar, casper }),
+        body: JSON.stringify({ ...basePayload, melchior, balthasar, casper }),
       });
       const moderator: ModeratorResponse = await modRes.json();
 
       const full: MagiFullResponse = { query, melchior, balthasar, casper, moderator };
-      setMessages((prev) => [...prev, { role: "magi", content: full, timestamp: new Date() }]);
+      const magiMsg: ChatMessage = { role: "magi", content: full, timestamp: new Date() };
+      setMessages((prev) => {
+        const next = [...prev, magiMsg];
+        updateSession(next, query);
+        return next;
+      });
     } catch (err) {
       console.error(err);
       setMessages((prev) => [
         ...prev,
-        { role: "magi", content: "ERRORE DI SISTEMA — connessione alle unità MAGI interrotta.", timestamp: new Date() },
+        { role: "magi", content: t.chat.systemError, timestamp: new Date() },
       ]);
     } finally {
       setLoading(false);
@@ -140,16 +230,27 @@ export default function MagiChat() {
 
   const providerMeta = PROVIDER_LABEL[settings.provider];
 
+  const activeTriplet =
+    settings.activeTripletId === "custom"
+      ? null
+      : (MAGI_TRIPLETS.find((t) => t.id === settings.activeTripletId) ?? MAGI_TRIPLETS[0]);
+
   return (
-    <div className="flex flex-col h-[100dvh]" style={{ background: "#0a0a0a", color: "#E0E0D0" }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: "#0a0a0a", color: "#E0E0D0" }}>
       {/* Header */}
       <div
         className="border-b px-4 sm:px-6 py-2 sm:py-3 flex items-center justify-between shrink-0 gap-2"
         style={{ borderColor: "#2a2a2a", background: "#0d0d0d" }}
       >
-        <div className="font-mono min-w-0">
-          <span className="text-sm font-bold tracking-widest text-gray-200">MAGI SYSTEM</span>
-          <span className="hidden sm:inline text-xs text-gray-600 ml-3">NERV CENTRAL DOGMA</span>
+        <div className="font-mono min-w-0 flex items-center gap-3">
+          <span className="text-sm font-bold tracking-widest text-gray-200 shrink-0">MAGI SYSTEM</span>
+          <Link
+            href="/market"
+            className="hidden sm:inline-flex items-center gap-1 text-xs tracking-widest transition-colors hover:text-gray-300 truncate"
+            style={{ color: "#4a4a4a" }}
+          >
+            ⬡ {activeTriplet?.name ?? (settings.triplet?.melchior?.nome || t.custom.fallbackName)}
+          </Link>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <div
@@ -162,7 +263,7 @@ export default function MagiChat() {
             onClick={() => setShowSettings(true)}
             className="text-gray-600 hover:text-gray-300 text-xs font-mono tracking-widest transition-colors border rounded px-2 py-1"
             style={{ borderColor: "#2a2a2a" }}
-            aria-label="Impostazioni"
+            aria-label="Settings"
           >
             <span className="hidden sm:inline">⚙ CONFIG</span>
             <span className="sm:hidden">⚙</span>
@@ -170,21 +271,30 @@ export default function MagiChat() {
         </div>
       </div>
 
-      {/* Unit Panels — side by side on sm+, stacked on xs */}
+      {/* Unit Panels */}
       <div
         className="flex flex-col sm:flex-row gap-2 px-3 sm:px-6 py-3 shrink-0 border-b"
         style={{ borderColor: "#2a2a2a" }}
       >
-        {UNITS.map((unit) => (
-          <NodePanel
-            key={unit.key}
-            name={unit.name}
-            subtitle={unit.subtitle}
-            accent={unit.accent}
-            data={displayUnits[unit.key]}
-            loading={loading}
-          />
-        ))}
+        {UNIT_KEYS.map((key, i) => {
+          const unit = activeTriplet?.units[i];
+          const customUnit = settings.activeTripletId === "custom" && settings.triplet?.attiva
+            ? settings.triplet[key]
+            : null;
+          const name = unit?.name ?? customUnit?.nome?.trim() ?? ["MELCHIOR-1", "BALTHASAR-2", "CASPER-3"][i];
+          const subtitle = unit?.role ?? customUnit?.ambito?.trim() ?? t.chat.unitSubs[i];
+          const accent = unit ? COLOR_MAP[unit.color] : ["#3B8BEB", "#1DB87E", "#E89020"][i];
+          return (
+            <NodePanel
+              key={key}
+              name={name}
+              subtitle={subtitle}
+              accent={accent}
+              data={displayUnits[key]}
+              loading={loading}
+            />
+          );
+        })}
       </div>
 
       {/* Chat Area */}
@@ -192,8 +302,8 @@ export default function MagiChat() {
         {messages.length === 0 && (
           <div className="text-center text-gray-600 text-xs mt-8 sm:mt-12 space-y-2">
             <div className="text-xl sm:text-2xl tracking-widest">⬡ MAGI ⬡</div>
-            <div>SISTEMA OPERATIVO — IN ATTESA DI INPUT</div>
-            <div className="text-gray-700 text-xs px-4">Inserisci una query per avviare il processo deliberativo</div>
+            <div>{t.chat.awaitingTitle}</div>
+            <div className="text-gray-700 text-xs px-4">{t.chat.awaitingSubtitle}</div>
           </div>
         )}
 
@@ -204,7 +314,7 @@ export default function MagiChat() {
                 className="max-w-[85%] sm:max-w-2xl rounded px-3 sm:px-4 py-2 text-sm break-words"
                 style={{ background: "#1a1a2e", border: "1px solid #3B8BEB30", color: "#E0E0D0" }}
               >
-                <span className="text-xs text-blue-500 block mb-1">OPERATORE</span>
+                <span className="text-xs text-blue-500 block mb-1">{t.chat.operator}</span>
                 {msg.content as string}
               </div>
             ) : typeof msg.content === "string" ? (
@@ -226,8 +336,8 @@ export default function MagiChat() {
           <div className="flex justify-start">
             <div className="text-xs font-mono text-gray-500 flex items-center gap-2">
               <span className="text-green-400 animate-pulse">▋</span>
-              <span className="hidden sm:inline">UNITÀ IN DELIBERAZIONE — attendere sintesi...</span>
-              <span className="sm:hidden">DELIBERAZIONE IN CORSO...</span>
+              <span className="hidden sm:inline">{t.chat.deliberating}</span>
+              <span className="sm:hidden">{t.chat.deliberatingShort}</span>
             </div>
           </div>
         )}
@@ -248,7 +358,7 @@ export default function MagiChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
-            placeholder="Inserisci query..."
+            placeholder={t.chat.placeholder}
             className="flex-1 bg-transparent border-b font-mono text-sm outline-none placeholder-gray-700 transition-colors min-w-0"
             style={{ borderColor: loading ? "#2a2a2a" : "#3B8BEB60", color: "#E0E0D0" }}
           />
@@ -262,7 +372,7 @@ export default function MagiChat() {
             }}
             onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = "transparent"; }}
           >
-            INVIA
+            {t.chat.send}
           </button>
         </div>
       </form>

@@ -10,7 +10,7 @@ export async function callLLM(
 ): Promise<string> {
   const resolvedKey = apiKey || (provider === "openai" ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY);
   if (!resolvedKey) {
-    throw new Error(`API key mancante per ${provider.toUpperCase()} — configurala nel pannello impostazioni (⚙ CONFIG).`);
+    throw new Error(`Missing API key for ${provider.toUpperCase()} — configure it in the settings panel (⚙ CONFIG).`);
   }
 
   if (provider === "openai") {

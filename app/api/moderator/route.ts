@@ -14,11 +14,11 @@ export async function POST(req: NextRequest) {
       apiKey?: string;
     };
 
-    const userMessage = `Query originale: "${query}"
+    const userMessage = `Original query: "${query}"
 
-MELCHIOR (scienziata): ${JSON.stringify(melchior)}
-BALTHASAR (madre): ${JSON.stringify(balthasar)}
-CASPER (donna): ${JSON.stringify(casper)}`;
+MELCHIOR (scientist): ${JSON.stringify(melchior)}
+BALTHASAR (mother): ${JSON.stringify(balthasar)}
+CASPER (woman): ${JSON.stringify(casper)}`;
 
     const text = await callLLM(MODERATOR_PROMPT, userMessage, provider, apiKey);
     const data: ModeratorResponse = JSON.parse(text);
@@ -26,7 +26,7 @@ CASPER (donna): ${JSON.stringify(casper)}`;
   } catch (err) {
     console.error("Moderator error:", err);
     return NextResponse.json(
-      { stato: "DEADLOCK", verdetto_finale: err instanceof Error ? err.message : "Errore nel layer di integrazione.", nota: "" } as ModeratorResponse,
+      { stato: "DEADLOCK", verdetto_finale: err instanceof Error ? err.message : "Error in the integration layer.", nota: "" } as ModeratorResponse,
       { status: 500 }
     );
   }

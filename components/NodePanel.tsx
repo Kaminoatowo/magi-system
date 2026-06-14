@@ -1,6 +1,7 @@
 "use client";
 
 import { UnitResponse, MagiVerdict } from "@/lib/types";
+import { useLanguage } from "@/lib/language-context";
 
 interface NodePanelProps {
   name: string;
@@ -23,6 +24,7 @@ const verdictBg: Record<MagiVerdict, string> = {
 };
 
 export default function NodePanel({ name, subtitle, accent, data, loading }: NodePanelProps) {
+  const { t } = useLanguage();
   return (
     <div
       className="flex-1 min-w-0 border rounded p-3 sm:p-4 flex sm:flex-col flex-row gap-3 transition-all duration-300 relative overflow-hidden"
@@ -65,7 +67,7 @@ export default function NodePanel({ name, subtitle, accent, data, loading }: Nod
         {loading && (
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <span style={{ color: accent }}>▋</span>
-            <span className="animate-pulse hidden sm:inline">ELABORAZIONE IN CORSO...</span>
+            <span className="animate-pulse hidden sm:inline">{t.nodePanel.processing}</span>
             <span className="animate-pulse sm:hidden">...</span>
           </div>
         )}
@@ -75,7 +77,7 @@ export default function NodePanel({ name, subtitle, accent, data, loading }: Nod
           </p>
         )}
         {!loading && !data && (
-          <p className="text-xs text-gray-600 italic hidden sm:block">IN ATTESA DI INPUT</p>
+          <p className="text-xs text-gray-600 italic hidden sm:block">{t.nodePanel.awaiting}</p>
         )}
 
         {/* Verdict inline on mobile, below on desktop */}
