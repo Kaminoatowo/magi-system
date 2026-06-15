@@ -25,9 +25,26 @@ export function getClientIp(headers: Headers): string {
   );
 }
 
-/** Returns true if KV is available (env vars are set). */
+/**
+ * Resolves KV REST credentials from env, accepting multiple naming schemes:
+ * the project's `MAGI_KV_` prefixed vars (Upstash integration on Vercel),
+ * the standard Vercel KV names, and the native Upstash names.
+ */
+function getKvCredentials(): { url: string; token: string } | null {
+  const url =
+    process.env.MAGI_KV_KV_REST_API_URL ??
+    process.env.KV_REST_API_URL ??
+    process.env.UPSTASH_REDIS_REST_URL;
+  const token =
+    process.env.MAGI_KV_KV_REST_API_TOKEN ??
+    process.env.KV_REST_API_TOKEN ??
+    process.env.UPSTASH_REDIS_REST_TOKEN;
+  return url && token ? { url, token } : null;
+}
+
+/** Returns true if KV is available (credentials are set). */
 export function isKvConfigured(): boolean {
-  return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+  return getKvCredentials() !== null;
 }
 
 const kvKey = (ip: string) => `quota:${ip}`;
@@ -35,7 +52,10 @@ const kvKey = (ip: string) => `quota:${ip}`;
 /** Returns the number of free queries already used by this IP. Returns 0 on any error. */
 export async function getQuotaUsed(ip: string): Promise<number> {
   try {
-    const { kv } = await import("@vercel/kv");
+    const creds = getKvCredentials();
+    if (!creds) return 0;
+    const { createClient } = await import("@vercel/kv");
+    const kv = createClient(creds);
     const val = await kv.get<number>(kvKey(ip));
     return val ?? 0;
   } catch {
@@ -46,7 +66,10 @@ export async function getQuotaUsed(ip: string): Promise<number> {
 /** Increments the quota counter for this IP. Returns 0 on any error. */
 export async function incrementQuota(ip: string): Promise<number> {
   try {
-    const { kv } = await import("@vercel/kv");
+    const creds = getKvCredentials();
+    if (!creds) return 0;
+    const { createClient } = await import("@vercel/kv");
+    const kv = createClient(creds);
     return await kv.incr(kvKey(ip));
   } catch {
     return 0;
