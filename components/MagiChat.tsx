@@ -53,11 +53,14 @@ export default function MagiChat() {
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState<MagiSettings>(DEFAULT_SETTINGS);
   const [showSettings, setShowSettings] = useState(false);
+  const [freeRemaining, setFreeRemaining] = useState<number | null>(null);
+  const [isFreeTierLimited, setIsFreeTierLimited] = useState(false);
   const [liveUnits, setLiveUnits] = useState<{
     melchior: UnitResponse | null;
     balthasar: UnitResponse | null;
     casper: UnitResponse | null;
   }>({ melchior: null, balthasar: null, casper: null });
+  const [expandedUnit, setExpandedUnit] = useState<"melchior" | "balthasar" | "casper" | null>(null);
   const sessionIdRef = useRef<string>(
     typeof crypto !== "undefined" ? crypto.randomUUID() : String(Date.now())
   );
@@ -87,6 +90,25 @@ export default function MagiChat() {
   useEffect(() => {
     localStorage.setItem("magi-settings", JSON.stringify(settings));
   }, [settings]);
+
+  useEffect(() => {
+    const key = settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey;
+    if (key) {
+      setFreeRemaining(null);
+      setIsFreeTierLimited(false);
+      return;
+    }
+    fetch("/api/quota")
+      .then((r) => r.json())
+      .then((d) => {
+        setFreeRemaining(d.remaining ?? null);
+        setIsFreeTierLimited(d.limited ?? false);
+      })
+      .catch(() => {
+        setFreeRemaining(null);
+        setIsFreeTierLimited(false);
+      });
+  }, [settings.anthropicKey, settings.openaiKey, settings.provider]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -139,6 +161,7 @@ export default function MagiChat() {
     setInput("");
     setLoading(true);
     setLiveUnits({ melchior: null, balthasar: null, casper: null });
+    setExpandedUnit(null);
 
     const userMsg: ChatMessage = { role: "user", content: query, timestamp: new Date() };
     setMessages((prev) => [...prev, userMsg]);
@@ -176,8 +199,19 @@ export default function MagiChat() {
       return;
     }
 
-    const basePayload = { query, provider: settings.provider, apiKey: getApiKey() || undefined };
+    const apiKey = getApiKey() || undefined;
+    const basePayload = { query, provider: settings.provider, apiKey };
     const prompts = resolvePrompts();
+
+    // Pre-check quota before wasting unit calls
+    if (!apiKey && freeRemaining !== null && freeRemaining <= 0) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "magi", content: "quota_exceeded", timestamp: new Date() },
+      ]);
+      setLoading(false);
+      return;
+    }
 
     try {
       const [melchior, balthasar, casper] = await Promise.all(
@@ -197,7 +231,20 @@ export default function MagiChat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...basePayload, melchior, balthasar, casper }),
       });
+
+      if (modRes.status === 429) {
+        setFreeRemaining(0);
+        setMessages((prev) => [
+          ...prev,
+          { role: "magi", content: "quota_exceeded", timestamp: new Date() },
+        ]);
+        setLoading(false);
+        return;
+      }
+
       const moderator: ModeratorResponse = await modRes.json();
+
+      if (!apiKey) setFreeRemaining((r) => (r !== null ? Math.max(0, r - 1) : null));
 
       const full: MagiFullResponse = { query, melchior, balthasar, casper, moderator };
       const magiMsg: ChatMessage = { role: "magi", content: full, timestamp: new Date() };
@@ -273,7 +320,9 @@ export default function MagiChat() {
 
       {/* Unit Panels */}
       <div
-        className="flex flex-col sm:flex-row gap-2 px-3 sm:px-6 py-3 shrink-0 border-b"
+        className={`flex flex-col sm:flex-row gap-2 px-3 sm:px-6 py-3 border-b transition-all ${
+          expandedUnit ? "flex-1 min-h-0" : "shrink-0"
+        }`}
         style={{ borderColor: "#2a2a2a" }}
       >
         {UNIT_KEYS.map((key, i) => {
@@ -292,13 +341,17 @@ export default function MagiChat() {
               accent={accent}
               data={displayUnits[key]}
               loading={loading}
+              isExpanded={expandedUnit === key}
+              onExpand={() => setExpandedUnit(expandedUnit === key ? null : key)}
             />
           );
         })}
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-4 font-mono text-sm min-h-0">
+      <div className={`flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-4 font-mono text-sm min-h-0 ${
+        expandedUnit ? "hidden sm:flex sm:flex-col" : ""
+      }`}>
         {messages.length === 0 && (
           <div className="text-center text-gray-600 text-xs mt-8 sm:mt-12 space-y-2">
             <div className="text-xl sm:text-2xl tracking-widest">⬡ MAGI ⬡</div>
@@ -318,12 +371,29 @@ export default function MagiChat() {
                 {msg.content as string}
               </div>
             ) : typeof msg.content === "string" ? (
-              <div
-                className="max-w-[85%] sm:max-w-2xl rounded px-3 sm:px-4 py-2 text-xs break-words"
-                style={{ background: "#1a0a0a", border: "1px solid #E8902030", color: "#E89020" }}
-              >
-                ⚠ {msg.content}
-              </div>
+              msg.content === "quota_exceeded" ? (
+                <div
+                  className="max-w-[85%] sm:max-w-2xl rounded px-3 sm:px-4 py-3 text-xs break-words space-y-1"
+                  style={{ background: "#1a0a0a", border: "1px solid #E8902030", color: "#E89020" }}
+                >
+                  <div>⚠ {t.chat.quotaExceeded}</div>
+                  <div>
+                    <button
+                      onClick={() => setShowSettings(true)}
+                      className="underline underline-offset-2 hover:opacity-70 transition-opacity"
+                    >
+                      {t.chat.quotaAddKey}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="max-w-[85%] sm:max-w-2xl rounded px-3 sm:px-4 py-2 text-xs break-words"
+                  style={{ background: "#1a0a0a", border: "1px solid #E8902030", color: "#E89020" }}
+                >
+                  ⚠ {msg.content}
+                </div>
+              )
             ) : (
               <div className="w-full">
                 <MagiReport data={msg.content as MagiFullResponse} />
@@ -344,6 +414,28 @@ export default function MagiChat() {
 
         <div ref={bottomRef} />
       </div>
+
+      {/* Free tier remaining badge */}
+      {isFreeTierLimited && freeRemaining !== null && (
+        <div
+          className="shrink-0 px-3 sm:px-6 py-1 flex items-center justify-end gap-1.5 border-t font-mono"
+          style={{ borderColor: "#2a2a2a", background: "#0d0d0d" }}
+        >
+          {freeRemaining > 0 ? (
+            <span className="text-xs tracking-widest" style={{ color: "#4a4a4a" }}>
+              {t.chat.freeRemaining(freeRemaining)}
+            </span>
+          ) : (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="text-xs tracking-widest underline underline-offset-2 hover:opacity-70 transition-opacity"
+              style={{ color: "#E89020" }}
+            >
+              {t.chat.quotaAddKey}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Input */}
       <form

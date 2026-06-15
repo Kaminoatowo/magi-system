@@ -15,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased flex flex-col" style={{ height: "100dvh" }}>
+      <body className="antialiased flex flex-col" style={{ height: "100dvh" }} suppressHydrationWarning>
         <LanguageProvider>
           <Nav />
           <main className="flex-1 min-h-0">
