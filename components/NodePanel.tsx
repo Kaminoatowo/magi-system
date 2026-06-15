@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { UnitResponse, MagiVerdict } from "@/lib/types";
 import { useLanguage } from "@/lib/language-context";
 
@@ -25,11 +26,19 @@ const verdictBg: Record<MagiVerdict, string> = {
 
 export default function NodePanel({ name, subtitle, accent, data, loading }: NodePanelProps) {
   const { t } = useLanguage();
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    setExpanded(false);
+  }, [data]);
+
+  const canExpand = !loading && !!data;
+
   return (
     <div
-      className="flex-1 min-w-0 border rounded p-3 sm:p-4 flex sm:flex-col flex-row gap-3 transition-all duration-300 relative overflow-hidden"
+      className="flex-1 min-w-0 border rounded transition-all duration-300 relative overflow-hidden"
       style={{
-        borderColor: loading ? accent : "#2a2a2a",
+        borderColor: loading ? accent : expanded ? `${accent}60` : "#2a2a2a",
         background: "#111111",
         boxShadow: loading ? `0 0 16px ${accent}40, inset 0 0 16px ${accent}08` : "none",
       }}
@@ -44,50 +53,84 @@ export default function NodePanel({ name, subtitle, accent, data, loading }: Nod
         />
       )}
 
-      {/* Identity */}
-      <div className="flex items-center gap-2 sm:justify-between shrink-0">
-        <div className="min-w-0">
-          <span className="text-xs font-bold tracking-widest block truncate" style={{ color: accent }}>
-            {name}
-          </span>
-          <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">{subtitle}</p>
-        </div>
+      {/* Mobile compact row */}
+      <div
+        className={`flex items-center gap-2 p-3 sm:hidden ${canExpand ? "cursor-pointer select-none" : ""}`}
+        onClick={() => canExpand && setExpanded((v) => !v)}
+      >
         <div
-          className="w-2 h-2 rounded-full shrink-0 transition-all duration-300"
+          className="w-2 h-2 rounded-full shrink-0"
           style={{
             backgroundColor: loading ? accent : data ? accent : "#2a2a2a",
             boxShadow: loading ? `0 0 8px ${accent}` : "none",
             animation: loading ? "blink 1s step-end infinite" : "none",
           }}
         />
+        <span className="text-xs font-bold tracking-widest flex-1 truncate" style={{ color: accent }}>
+          {name}
+        </span>
+        {loading && (
+          <span className="text-xs text-gray-500 animate-pulse">...</span>
+        )}
+        {data && !loading && (
+          <>
+            <div
+              className={`border rounded px-2 py-0.5 text-xs font-bold tracking-widest shrink-0 ${verdictColor[data.verdetto]} ${verdictBg[data.verdetto]}`}
+            >
+              {data.verdetto}
+            </div>
+            <span className="text-gray-600 text-xs shrink-0">{expanded ? "▲" : "▼"}</span>
+          </>
+        )}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 min-w-0 sm:min-h-[60px] flex flex-col justify-center gap-2">
-        {loading && (
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <span style={{ color: accent }}>▋</span>
-            <span className="animate-pulse hidden sm:inline">{t.nodePanel.processing}</span>
-            <span className="animate-pulse sm:hidden">...</span>
-          </div>
-        )}
-        {!loading && data && (
-          <p className="text-xs sm:text-sm text-gray-300 leading-relaxed line-clamp-3 sm:line-clamp-none">
-            {data.sintesi}
-          </p>
-        )}
-        {!loading && !data && (
-          <p className="text-xs text-gray-600 italic hidden sm:block">{t.nodePanel.awaiting}</p>
-        )}
+      {/* Mobile expanded content */}
+      {expanded && data && (
+        <div className="sm:hidden px-3 pb-3 border-t" style={{ borderColor: "#1e1e1e" }}>
+          <p className="text-xs text-gray-300 leading-relaxed mt-2">{data.sintesi}</p>
+        </div>
+      )}
 
-        {/* Verdict inline on mobile, below on desktop */}
-        {data && !loading && (
-          <div
-            className={`border rounded px-2 sm:px-3 py-1 sm:py-1.5 text-center text-xs font-bold tracking-widest w-fit sm:w-full ${verdictColor[data.verdetto]} ${verdictBg[data.verdetto]}`}
-          >
-            {data.verdetto}
+      {/* Desktop full view */}
+      <div className="hidden sm:flex sm:flex-col gap-3 p-4">
+        <div className="flex items-center gap-2 justify-between shrink-0">
+          <div className="min-w-0">
+            <span className="text-xs font-bold tracking-widest block truncate" style={{ color: accent }}>
+              {name}
+            </span>
+            <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
           </div>
-        )}
+          <div
+            className="w-2 h-2 rounded-full shrink-0 transition-all duration-300"
+            style={{
+              backgroundColor: loading ? accent : data ? accent : "#2a2a2a",
+              boxShadow: loading ? `0 0 8px ${accent}` : "none",
+              animation: loading ? "blink 1s step-end infinite" : "none",
+            }}
+          />
+        </div>
+
+        <div className="flex-1 min-h-[60px] flex flex-col justify-center gap-2">
+          {loading && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <span style={{ color: accent }}>▋</span>
+              <span className="animate-pulse">{t.nodePanel.processing}</span>
+            </div>
+          )}
+          {!loading && data && (
+            <p className="text-sm text-gray-300 leading-relaxed">{data.sintesi}</p>
+          )}
+          {!loading && !data && (
+            <p className="text-xs text-gray-600 italic">{t.nodePanel.awaiting}</p>
+          )}
+          {data && !loading && (
+            <div
+              className={`border rounded px-3 py-1.5 text-center text-xs font-bold tracking-widest w-full ${verdictColor[data.verdetto]} ${verdictBg[data.verdetto]}`}
+            >
+              {data.verdetto}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
