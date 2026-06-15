@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { UnitResponse, MagiVerdict } from "@/lib/types";
 import { useLanguage } from "@/lib/language-context";
 
@@ -10,6 +9,8 @@ interface NodePanelProps {
   accent: string;
   data: UnitResponse | null;
   loading: boolean;
+  isExpanded: boolean;
+  onExpand: () => void;
 }
 
 const verdictColor: Record<MagiVerdict, string> = {
@@ -24,21 +25,20 @@ const verdictBg: Record<MagiVerdict, string> = {
   CAUTION: "bg-yellow-400/10 border-yellow-400/30",
 };
 
-export default function NodePanel({ name, subtitle, accent, data, loading }: NodePanelProps) {
+export default function NodePanel({ name, subtitle, accent, data, loading, isExpanded, onExpand }: NodePanelProps) {
   const { t } = useLanguage();
-  const [expanded, setExpanded] = useState(false);
-
-  useEffect(() => {
-    setExpanded(false);
-  }, [data]);
 
   const canExpand = !loading && !!data;
 
   return (
     <div
-      className="flex-1 min-w-0 border rounded transition-all duration-300 relative overflow-hidden"
+      className={`border rounded transition-all duration-300 relative overflow-hidden ${
+        isExpanded
+          ? "flex-1 min-w-0 flex flex-col"
+          : "min-w-0 shrink-0 sm:flex-1"
+      }`}
       style={{
-        borderColor: loading ? accent : expanded ? `${accent}60` : "#2a2a2a",
+        borderColor: loading ? accent : isExpanded ? `${accent}60` : "#2a2a2a",
         background: "#111111",
         boxShadow: loading ? `0 0 16px ${accent}40, inset 0 0 16px ${accent}08` : "none",
       }}
@@ -56,7 +56,7 @@ export default function NodePanel({ name, subtitle, accent, data, loading }: Nod
       {/* Mobile compact row */}
       <div
         className={`flex items-center gap-2 p-3 sm:hidden ${canExpand ? "cursor-pointer select-none" : ""}`}
-        onClick={() => canExpand && setExpanded((v) => !v)}
+        onClick={() => canExpand && onExpand()}
       >
         <div
           className="w-2 h-2 rounded-full shrink-0"
@@ -79,14 +79,14 @@ export default function NodePanel({ name, subtitle, accent, data, loading }: Nod
             >
               {data.verdetto}
             </div>
-            <span className="text-gray-600 text-xs shrink-0">{expanded ? "▲" : "▼"}</span>
+            <span className="text-gray-600 text-xs shrink-0">{isExpanded ? "▲" : "▼"}</span>
           </>
         )}
       </div>
 
       {/* Mobile expanded content */}
-      {expanded && data && (
-        <div className="sm:hidden px-3 pb-3 border-t" style={{ borderColor: "#1e1e1e" }}>
+      {isExpanded && data && (
+        <div className="sm:hidden flex-1 overflow-y-auto px-3 pb-3 border-t" style={{ borderColor: "#1e1e1e" }}>
           <p className="text-xs text-gray-300 leading-relaxed mt-2">{data.sintesi}</p>
         </div>
       )}

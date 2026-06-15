@@ -60,6 +60,7 @@ export default function MagiChat() {
     balthasar: UnitResponse | null;
     casper: UnitResponse | null;
   }>({ melchior: null, balthasar: null, casper: null });
+  const [expandedUnit, setExpandedUnit] = useState<"melchior" | "balthasar" | "casper" | null>(null);
   const sessionIdRef = useRef<string>(
     typeof crypto !== "undefined" ? crypto.randomUUID() : String(Date.now())
   );
@@ -160,6 +161,7 @@ export default function MagiChat() {
     setInput("");
     setLoading(true);
     setLiveUnits({ melchior: null, balthasar: null, casper: null });
+    setExpandedUnit(null);
 
     const userMsg: ChatMessage = { role: "user", content: query, timestamp: new Date() };
     setMessages((prev) => [...prev, userMsg]);
@@ -318,7 +320,9 @@ export default function MagiChat() {
 
       {/* Unit Panels */}
       <div
-        className="flex flex-col sm:flex-row gap-2 px-3 sm:px-6 py-3 shrink-0 border-b"
+        className={`flex flex-col sm:flex-row gap-2 px-3 sm:px-6 py-3 border-b transition-all ${
+          expandedUnit ? "flex-1 min-h-0" : "shrink-0"
+        }`}
         style={{ borderColor: "#2a2a2a" }}
       >
         {UNIT_KEYS.map((key, i) => {
@@ -337,13 +341,17 @@ export default function MagiChat() {
               accent={accent}
               data={displayUnits[key]}
               loading={loading}
+              isExpanded={expandedUnit === key}
+              onExpand={() => setExpandedUnit(expandedUnit === key ? null : key)}
             />
           );
         })}
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-4 font-mono text-sm min-h-0">
+      <div className={`flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-4 font-mono text-sm min-h-0 ${
+        expandedUnit ? "hidden sm:flex sm:flex-col" : ""
+      }`}>
         {messages.length === 0 && (
           <div className="text-center text-gray-600 text-xs mt-8 sm:mt-12 space-y-2">
             <div className="text-xl sm:text-2xl tracking-widest">⬡ MAGI ⬡</div>
