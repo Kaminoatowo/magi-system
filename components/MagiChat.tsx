@@ -193,13 +193,16 @@ export default function MagiChat() {
         },
       };
       const magiMsg: ChatMessage = { role: "magi", content: testResponse, timestamp: new Date() };
-      setLiveUnits({ melchior: testResponse.melchior, balthasar: testResponse.balthasar, casper: testResponse.casper });
-      setMessages((prev) => {
-        const next = [...prev, magiMsg];
-        updateSession(next, query);
-        return next;
-      });
-      setLoading(false);
+      // Simulate deliberation: keep the blinking frame on for 1s, then resolve.
+      setTimeout(() => {
+        setLiveUnits({ melchior: testResponse.melchior, balthasar: testResponse.balthasar, casper: testResponse.casper });
+        setMessages((prev) => {
+          const next = [...prev, magiMsg];
+          updateSession(next, query);
+          return next;
+        });
+        setLoading(false);
+      }, 1000);
       return;
     }
 
@@ -284,6 +287,11 @@ export default function MagiChat() {
       ? (lastMagi.content as MagiFullResponse).query
       : ([...messages].reverse().find((m) => m.role === "user")?.content as string) ?? "";
 
+  const lastModerator =
+    lastMagi && typeof lastMagi.content !== "string"
+      ? (lastMagi.content as MagiFullResponse).moderator
+      : null;
+
   const providerMeta = PROVIDER_LABEL[settings.provider];
 
   const activeTriplet =
@@ -330,7 +338,7 @@ export default function MagiChat() {
       {/* Unit Panels */}
       {nerv ? (
         <div className="flex-1 min-h-0 border-b" style={{ borderColor: "#1a1a1a", background: "#0a0a0a" }}>
-          <MagiClassicDisplay units={displayUnits} query={lastQuery} loading={loading} />
+          <MagiClassicDisplay units={displayUnits} moderator={lastModerator} query={lastQuery} loading={loading} />
         </div>
       ) : (
       <div

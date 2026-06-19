@@ -35,3 +35,14 @@ export function tallyVotes(verdicts: MagiVerdict[]): VoteTally {
 
   return { approval, opposite, reservation, resultKanji, passed };
 }
+
+// Result code shown in the CODE panel, by outcome strength:
+// 200 net positive (3-0), 250 majority positive (2), 350 majority negative (2),
+// 400 net negative (3-0). null when there is no clear approve/reject majority.
+export function resultCode(t: VoteTally): number | null {
+  if (t.approval === 3) return 200;
+  if (t.approval === 2) return 250;
+  if (t.opposite === 3) return 400;
+  if (t.opposite === 2) return 350;
+  return null;
+}
