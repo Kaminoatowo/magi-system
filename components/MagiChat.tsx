@@ -6,8 +6,10 @@ import { ChatMessage, MagiFullResponse, UnitResponse, ModeratorResponse, MagiSet
 import { buildCustomPrompt } from "@/lib/prompts";
 import { MAGI_TRIPLETS, COLOR_MAP } from "@/lib/triplets";
 import { useLanguage } from "@/lib/language-context";
+import { useTheme } from "@/lib/theme-context";
 import NodePanel from "./NodePanel";
 import MagiReport from "./MagiReport";
+import MagiClassicDisplay from "./MagiClassicDisplay";
 import SettingsPanel from "./SettingsPanel";
 
 const UNIT_ENDPOINTS = ["/api/melchior", "/api/balthasar", "/api/casper"];
@@ -48,6 +50,8 @@ const PROVIDER_LABEL: Record<string, { label: string; color: string }> = {
 
 export default function MagiChat() {
   const { t } = useLanguage();
+  const { theme } = useTheme();
+  const nerv = theme === "nerv";
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -275,6 +279,11 @@ export default function MagiChat() {
       }
     : { melchior: null, balthasar: null, casper: null };
 
+  const lastQuery =
+    lastMagi && typeof lastMagi.content !== "string"
+      ? (lastMagi.content as MagiFullResponse).query
+      : ([...messages].reverse().find((m) => m.role === "user")?.content as string) ?? "";
+
   const providerMeta = PROVIDER_LABEL[settings.provider];
 
   const activeTriplet =
@@ -319,6 +328,11 @@ export default function MagiChat() {
       </div>
 
       {/* Unit Panels */}
+      {nerv ? (
+        <div className="flex-1 min-h-0 border-b" style={{ borderColor: "#1a1a1a", background: "#0a0a0a" }}>
+          <MagiClassicDisplay units={displayUnits} query={lastQuery} loading={loading} />
+        </div>
+      ) : (
       <div
         className={`flex flex-col sm:flex-row gap-2 px-3 sm:px-6 py-3 border-b transition-all ${
           expandedUnit ? "flex-1 min-h-0" : "shrink-0"
@@ -347,9 +361,12 @@ export default function MagiChat() {
           );
         })}
       </div>
+      )}
 
       {/* Chat Area */}
       <div className={`flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-4 font-mono text-sm min-h-0 ${
+        nerv ? "hidden" : ""
+      } ${
         expandedUnit ? "hidden sm:flex sm:flex-col" : ""
       }`}>
         {messages.length === 0 && (

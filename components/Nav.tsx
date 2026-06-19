@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/lib/language-context";
+import { useTheme } from "@/lib/theme-context";
 
 const LINKS = [
   { href: "/", label: "CHAT" },
@@ -13,6 +14,8 @@ const LINKS = [
 export default function Nav() {
   const pathname = usePathname();
   const { toggle, t } = useLanguage();
+  const { theme, toggle: toggleTheme } = useTheme();
+  const nerv = theme === "nerv";
 
   return (
     <nav
@@ -37,7 +40,20 @@ export default function Nav() {
         );
       })}
 
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1">
+        <button
+          onClick={toggleTheme}
+          className="text-xs font-mono font-bold tracking-widest px-2 py-1 rounded border transition-colors"
+          style={{
+            borderColor: nerv ? "#F5A800" : "#2a2a2a",
+            color: nerv ? "#F5A800" : "#4a4a4a",
+            background: "transparent",
+          }}
+          aria-label="Toggle theme"
+          title={nerv ? "NERV CLASSIC" : "MODERN"}
+        >
+          ◎ {nerv ? "NERV" : "MODERN"}
+        </button>
         <button
           onClick={toggle}
           className="text-xs font-mono font-bold tracking-widest px-2 py-1 rounded border transition-colors"
