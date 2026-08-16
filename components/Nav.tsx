@@ -11,6 +11,9 @@ const LINKS = [
   { href: "/archive", label: "ARCHIVE" },
 ];
 
+/** External documentation site (docs-only repo, GitHub Pages). */
+const DOCS_URL = "https://kaminoatowo.github.io/magi-system-docs/";
+
 export default function Nav() {
   const pathname = usePathname();
   const { toggle, t } = useLanguage();
@@ -39,6 +42,17 @@ export default function Nav() {
           </Link>
         );
       })}
+
+      {/* Documentation (external) */}
+      <a
+        href={DOCS_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs font-mono font-bold tracking-widest px-3 py-1 rounded transition-colors hover:text-gray-300"
+        style={{ color: "#4a4a4a" }}
+      >
+        DOC ↗
+      </a>
 
       <div className="ml-auto flex items-center gap-1">
         <button
