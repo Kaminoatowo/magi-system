@@ -13,16 +13,19 @@ import {
 
 export async function POST(req: NextRequest) {
   try {
-    const { query, melchior, balthasar, casper, provider = "anthropic", apiKey } = await req.json() as {
+    const { query, melchior, balthasar, casper, provider = "anthropic", apiKey, model, baseUrl } = await req.json() as {
       query: string;
       melchior: UnitResponse;
       balthasar: UnitResponse;
       casper: UnitResponse;
       provider?: MagiProvider;
       apiKey?: string;
+      model?: string;
+      baseUrl?: string;
     };
 
-    const freeTier = !apiKey ? getFreeTierConfig() : null;
+    const isCustom = provider === "custom";
+    const freeTier = !isCustom && !apiKey ? getFreeTierConfig() : null;
 
     // Quota enforcement (only for free tier with KV configured)
     if (freeTier && isKvConfigured()) {
@@ -38,7 +41,6 @@ export async function POST(req: NextRequest) {
     }
 
     const resolvedProvider = freeTier ? freeTier.provider : provider;
-    const resolvedModel = freeTier ? freeTier.model : undefined;
 
     const userMessage = `Original query: "${query}"
 
@@ -46,7 +48,12 @@ MELCHIOR (scientist): ${JSON.stringify(melchior)}
 BALTHASAR (mother): ${JSON.stringify(balthasar)}
 CASPER (woman): ${JSON.stringify(casper)}`;
 
-    const text = await callLLM(MODERATOR_PROMPT, userMessage, resolvedProvider, apiKey, resolvedModel);
+    const text = await callLLM(MODERATOR_PROMPT, userMessage, {
+      provider: resolvedProvider,
+      apiKey,
+      model: freeTier ? freeTier.model : model,
+      baseUrl: resolvedProvider === "custom" ? baseUrl : undefined,
+    });
     const data: ModeratorResponse = JSON.parse(text);
     return NextResponse.json(data);
   } catch (err) {

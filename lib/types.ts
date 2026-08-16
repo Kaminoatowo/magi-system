@@ -1,6 +1,6 @@
 export type MagiVerdict = "APPROVE" | "REJECT" | "CAUTION";
 export type MagiStato = "CONSENSUS" | "MAJORITY" | "DEADLOCK";
-export type MagiProvider = "anthropic" | "openai";
+export type MagiProvider = "anthropic" | "openai" | "custom";
 
 export interface UnitResponse {
   sintesi: string;
@@ -70,6 +70,12 @@ export interface MagiSettings {
   provider: MagiProvider;
   anthropicKey: string;
   openaiKey: string;
+  /** Base URL of a custom OpenAI-compatible endpoint (Ollama, llama.cpp, OpenRouter, …). */
+  customBaseUrl: string;
+  /** Model name to use against the custom endpoint. */
+  customModel: string;
+  /** Optional API key for the custom endpoint (empty for key-less local servers). */
+  customKey: string;
   triplet?: MagiTripletConfig;
   activeTripletId: string;
 }
