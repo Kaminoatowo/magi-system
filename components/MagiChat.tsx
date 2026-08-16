@@ -19,6 +19,9 @@ const DEFAULT_SETTINGS: MagiSettings = {
   provider: "anthropic",
   anthropicKey: "",
   openaiKey: "",
+  customBaseUrl: "",
+  customModel: "",
+  customKey: "",
   activeTripletId: "evangelion-classic",
 };
 
@@ -46,6 +49,7 @@ function saveSession(session: MagiSession) {
 const PROVIDER_LABEL: Record<string, { label: string; color: string }> = {
   anthropic: { label: "ANTHROPIC", color: "#E89020" },
   openai: { label: "OPENAI", color: "#1DB87E" },
+  custom: { label: "OPENAI-COMPAT", color: "#3B8BEB" },
 };
 
 export default function MagiChat() {
@@ -96,7 +100,13 @@ export default function MagiChat() {
   }, [settings]);
 
   useEffect(() => {
-    const key = settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey;
+    // Custom endpoints (self-hosted OpenAI-compatible) bypass the server free tier.
+    const key =
+      settings.provider === "custom"
+        ? "custom"
+        : settings.provider === "anthropic"
+        ? settings.anthropicKey
+        : settings.openaiKey;
     if (key) {
       setFreeRemaining(null);
       setIsFreeTierLimited(false);
@@ -112,13 +122,14 @@ export default function MagiChat() {
         setFreeRemaining(null);
         setIsFreeTierLimited(false);
       });
-  }, [settings.anthropicKey, settings.openaiKey, settings.provider]);
+  }, [settings.anthropicKey, settings.openaiKey, settings.customBaseUrl, settings.provider]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   function getApiKey() {
+    if (settings.provider === "custom") return settings.customKey || "local";
     return settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey;
   }
 
@@ -207,7 +218,14 @@ export default function MagiChat() {
     }
 
     const apiKey = getApiKey() || undefined;
-    const basePayload = { query, provider: settings.provider, apiKey };
+    const basePayload = {
+      query,
+      provider: settings.provider,
+      apiKey,
+      ...(settings.provider === "custom"
+        ? { baseUrl: settings.customBaseUrl || undefined, model: settings.customModel || undefined }
+        : {}),
+    };
     const prompts = resolvePrompts();
 
     // Pre-check quota before wasting unit calls

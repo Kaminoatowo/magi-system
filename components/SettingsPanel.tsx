@@ -14,6 +14,14 @@ interface SettingsPanelProps {
 const PROVIDERS: { value: MagiProvider; label: string; model: string; color: string }[] = [
   { value: "anthropic", label: "ANTHROPIC", model: "claude-sonnet-4-20250514", color: "#E89020" },
   { value: "openai", label: "OPENAI", model: "gpt-4o", color: "#1DB87E" },
+  { value: "custom", label: "OPENAI-COMPAT", model: "Ollama · llama.cpp · OpenRouter", color: "#3B8BEB" },
+];
+
+const CUSTOM_EXAMPLES = [
+  "Ollama  → http://localhost:11434/v1",
+  "llama.cpp → http://localhost:8080/v1",
+  "OpenRouter → https://openrouter.ai/api/v1",
+  "vLLM/LM Studio → http://localhost:1234/v1",
 ];
 
 export default function SettingsPanel({ settings, onChange, onClose }: SettingsPanelProps) {
@@ -38,6 +46,7 @@ export default function SettingsPanel({ settings, onChange, onClose }: SettingsP
   }, [onClose]);
 
   const activeProvider = PROVIDERS.find((p) => p.value === settings.provider)!;
+  const isCustom = settings.provider === "custom";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-start justify-end" style={{ background: "rgba(0,0,0,0.7)" }}>
@@ -97,43 +106,111 @@ export default function SettingsPanel({ settings, onChange, onClose }: SettingsP
             </div>
           </div>
 
-          {/* API keys */}
-          <div className="space-y-4">
-            <label className="text-xs tracking-widest text-gray-500 block">API KEYS</label>
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Optional — if empty, uses server environment variables.
-            </p>
+          {/* Custom OpenAI-compatible endpoint config */}
+          {isCustom && (
+            <div className="space-y-4">
+              <label className="text-xs tracking-widest text-gray-500 block">CUSTOM ENDPOINT</label>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Any OpenAI-compatible API. Point it at your self-hosted server or a gateway using the OpenAI protocol.
+              </p>
 
-            {[
-              { key: "anthropicKey" as const, label: "ANTHROPIC_API_KEY", placeholder: "sk-ant-...", provider: "anthropic", color: "#E89020" },
-              { key: "openaiKey" as const, label: "OPENAI_API_KEY", placeholder: "sk-...", provider: "openai", color: "#1DB87E" },
-            ].map(({ key, label, placeholder, provider, color }) => (
-              <div key={key} className="space-y-1">
-                <label className="text-xs text-gray-500 tracking-widest">{label}</label>
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500 tracking-widest">BASE URL <span style={{ color: "#3B8BEB" }}>*</span></label>
+                <input
+                  type="text"
+                  value={settings.customBaseUrl}
+                  onChange={(e) => onChange({ ...settings, customBaseUrl: e.target.value })}
+                  placeholder="http://localhost:11434/v1"
+                  className="w-full bg-transparent border rounded px-3 py-2 text-xs font-mono outline-none transition-colors placeholder-gray-700"
+                  style={{ borderColor: "#3B8BEBaa", color: "#E0E0D0" }}
+                />
+                <div className="pt-1 space-y-0.5">
+                  {CUSTOM_EXAMPLES.map((ex) => (
+                    <div key={ex} className="text-[11px] text-gray-700 font-mono truncate">{ex}</div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500 tracking-widest">MODEL NAME</label>
+                <input
+                  type="text"
+                  value={settings.customModel}
+                  onChange={(e) => onChange({ ...settings, customModel: e.target.value })}
+                  placeholder="llama3.1, qwen2.5, gpt-4o…"
+                  className="w-full bg-transparent border rounded px-3 py-2 text-xs font-mono outline-none transition-colors placeholder-gray-700"
+                  style={{ borderColor: "#2a2a2a", color: "#E0E0D0" }}
+                  onFocus={(e) => (e.target.style.borderColor = "#3B8BEB")}
+                  onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
+                />
+                <p className="text-[11px] text-gray-600">Optional — if empty, defaults to the server model.</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500 tracking-widest">API KEY <span className="text-gray-700">(OPTIONAL)</span></label>
                 <input
                   type="password"
-                  value={settings[key]}
-                  onChange={(e) => onChange({ ...settings, [key]: e.target.value })}
-                  placeholder={placeholder}
+                  value={settings.customKey}
+                  onChange={(e) => onChange({ ...settings, customKey: e.target.value })}
+                  placeholder="Empty for local servers (Ollama, llama.cpp)"
                   className="w-full bg-transparent border rounded px-3 py-2 text-xs font-mono outline-none transition-colors placeholder-gray-700"
-                  style={{
-                    borderColor: settings.provider === provider ? `${color}aa` : "#2a2a2a",
-                    color: "#E0E0D0",
-                  }}
+                  style={{ borderColor: "#2a2a2a", color: "#E0E0D0" }}
+                  onFocus={(e) => (e.target.style.borderColor = "#3B8BEB")}
+                  onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
                 />
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {/* API keys */}
+          {!isCustom && (
+            <div className="space-y-4">
+              <label className="text-xs tracking-widest text-gray-500 block">API KEYS</label>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Optional — if empty, uses server environment variables.
+              </p>
+
+              {[
+                { key: "anthropicKey" as const, label: "ANTHROPIC_API_KEY", placeholder: "sk-ant-...", provider: "anthropic" as const, color: "#E89020" },
+                { key: "openaiKey" as const, label: "OPENAI_API_KEY", placeholder: "sk-...", provider: "openai" as const, color: "#1DB87E" },
+              ].map(({ key, label, placeholder, provider, color }) => (
+                <div key={key} className="space-y-1">
+                  <label className="text-xs text-gray-500 tracking-widest">{label}</label>
+                  <input
+                    type="password"
+                    value={settings[key]}
+                    onChange={(e) => onChange({ ...settings, [key]: e.target.value })}
+                    placeholder={placeholder}
+                    className="w-full bg-transparent border rounded px-3 py-2 text-xs font-mono outline-none transition-colors placeholder-gray-700"
+                    style={{
+                      borderColor: settings.provider === provider ? `${color}aa` : "#2a2a2a",
+                      color: "#E0E0D0",
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Status */}
           <div className="rounded border px-4 py-3 space-y-1.5" style={{ borderColor: "#2a2a2a", background: "#111111" }}>
             <div className="text-xs tracking-widest text-gray-500 mb-2">CURRENT STATUS</div>
             {[
-              { label: "Provider", value: activeProvider.label, color: activeProvider.color },
-              { label: "Model", value: activeProvider.model, color: "#9ca3af" },
+              {
+                label: "Provider",
+                value: isCustom ? "OPENAI-COMPAT" : activeProvider.label,
+                color: isCustom ? "#3B8BEB" : activeProvider.color,
+              },
+              {
+                label: "Model",
+                value: isCustom ? (settings.customModel || "—") : activeProvider.model,
+                color: "#9ca3af",
+              },
               {
                 label: "Key",
-                value: (settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey) ? "● CUSTOM" : "● ENV SERVER",
+                value: isCustom
+                  ? (settings.customKey ? "● CUSTOM" : "● NO AUTH")
+                  : ((settings.provider === "anthropic" ? settings.anthropicKey : settings.openaiKey) ? "● CUSTOM" : "● ENV SERVER"),
                 color: "#9ca3af",
               },
             ].map(({ label, value, color }) => (

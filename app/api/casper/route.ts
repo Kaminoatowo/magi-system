@@ -6,19 +6,26 @@ import { getFreeTierConfig } from "@/lib/free-tier";
 
 export async function POST(req: NextRequest) {
   try {
-    const { query, provider = "anthropic", apiKey, customPrompt } = await req.json() as {
+    const { query, provider = "anthropic", apiKey, customPrompt, model, baseUrl } = await req.json() as {
       query: string;
       provider?: MagiProvider;
       apiKey?: string;
       customPrompt?: string;
+      model?: string;
+      baseUrl?: string;
     };
     if (!query) return NextResponse.json({ error: "Missing query" }, { status: 400 });
 
-    const freeTier = !apiKey ? getFreeTierConfig() : null;
+    const isCustom = provider === "custom";
+    const freeTier = !isCustom && !apiKey ? getFreeTierConfig() : null;
     const resolvedProvider = freeTier ? freeTier.provider : provider;
-    const resolvedModel = freeTier ? freeTier.model : undefined;
 
-    const text = await callLLM(customPrompt || CASPER_PROMPT, query, resolvedProvider, apiKey, resolvedModel);
+    const text = await callLLM(customPrompt || CASPER_PROMPT, query, {
+      provider: resolvedProvider,
+      apiKey,
+      model: freeTier ? freeTier.model : model,
+      baseUrl: resolvedProvider === "custom" ? baseUrl : undefined,
+    });
     const data: UnitResponse = JSON.parse(text);
     return NextResponse.json(data);
   } catch (err) {

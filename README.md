@@ -1,4 +1,4 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MAGI System
 
 ## Getting Started
 
@@ -16,9 +16,24 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Custom OpenAI-compatible endpoints
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Besides the built-in **ANTHROPIC** and **OPENAI** providers, you can point the app at **any** OpenAI-compatible API from the settings panel (⚙ CONFIG → **OPENAI-COMPAT**):
+
+- Self-hosted **Ollama**, **llama.cpp**, **vLLM**, LM Studio, etc.
+- Gateways using the OpenAI wire protocol (**OpenRouter**, one-api, LiteLLM…)
+
+Configure three fields:
+
+| Field | Example | Notes |
+|-------|---------|-------|
+| **BASE URL** | `http://localhost:11434/v1` | Required. The endpoint's `/v1` chat-completions root. |
+| **MODEL NAME** | `llama3.1`, `qwen2.5`, `gpt-4o`… | Optional — falls back to the server default if empty. |
+| **API KEY** | *(empty)* | Optional. Local servers (Ollama, llama.cpp) usually ignore auth and work with no key. |
+
+Custom endpoints bypass the server free tier/quota entirely, since they use your own infrastructure.
+
+**Note:** the client must be able to reach the endpoint. `localhost` works when the browser and AI server share a machine; self-hosted servers on another host should be exposed on the LAN as `http://<host-ip>:<port>/v1` (with CORS/origin enabled).
 
 ## Learn More
 
