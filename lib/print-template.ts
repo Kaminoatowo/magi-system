@@ -502,8 +502,8 @@ export function buildPrintHtml(data: MagiFullResponse): string {
 </html>`;
 }
 
-function escHtml(s: string): string {
-  return s
+function escHtml(s: string | null | undefined): string {
+  return (s ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

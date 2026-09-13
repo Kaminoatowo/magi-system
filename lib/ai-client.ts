@@ -21,7 +21,9 @@ async function callOpenAICompatible(
   const client = new OpenAI({ apiKey, baseURL: baseUrl || undefined });
   const res = await client.chat.completions.create({
     model: model ?? fallbackModel,
-    max_tokens: 512,
+    // High enough to finish a JSON object with analytic prose; low enough to
+    // bound cost. Keep well above 512, which truncated models mid-JSON.
+    max_tokens: 1024,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },
@@ -70,7 +72,7 @@ export async function callLLM(
   const client = new Anthropic({ apiKey: resolvedKey });
   const res = await client.messages.create({
     model: model || "claude-sonnet-4-20250514",
-    max_tokens: 512,
+    max_tokens: 1024,
     system: systemPrompt,
     messages: [{ role: "user", content: userMessage }],
   });

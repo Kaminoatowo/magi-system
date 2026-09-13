@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { CASPER_PROMPT } from "@/lib/prompts";
 import { UnitResponse, MagiProvider } from "@/lib/types";
 import { callLLM } from "@/lib/ai-client";
+import { parseModelJson } from "@/lib/parse-model-json";
 import { getFreeTierConfig } from "@/lib/free-tier";
 
 export async function POST(req: NextRequest) {
@@ -26,7 +27,10 @@ export async function POST(req: NextRequest) {
       model: freeTier ? freeTier.model : model,
       baseUrl: resolvedProvider === "custom" ? baseUrl : undefined,
     });
-    const data: UnitResponse = JSON.parse(text);
+    const data: UnitResponse | null = parseModelJson<UnitResponse>(text);
+    if (!data || !data.sintesi) {
+      throw new Error("Model returned no usable JSON from Casper unit.");
+    }
     return NextResponse.json(data);
   } catch (err) {
     console.error("Casper error:", err);

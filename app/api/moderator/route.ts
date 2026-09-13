@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { MODERATOR_PROMPT } from "@/lib/prompts";
 import { ModeratorResponse, UnitResponse, MagiProvider } from "@/lib/types";
 import { callLLM } from "@/lib/ai-client";
+import { parseModelJson } from "@/lib/parse-model-json";
 import {
   getFreeTierConfig,
   getClientIp,
@@ -54,7 +55,10 @@ CASPER (woman): ${JSON.stringify(casper)}`;
       model: freeTier ? freeTier.model : model,
       baseUrl: resolvedProvider === "custom" ? baseUrl : undefined,
     });
-    const data: ModeratorResponse = JSON.parse(text);
+    const data: ModeratorResponse | null = parseModelJson<ModeratorResponse>(text);
+    if (!data || !data.verdetto_finale) {
+      throw new Error("Integration layer returned no usable JSON.");
+    }
     return NextResponse.json(data);
   } catch (err) {
     console.error("Moderator error:", err);
